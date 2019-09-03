@@ -8154,8 +8154,8 @@ a:hover {
 
 .action-button {
     color: #fff;
-    background-color: #329F80;
-    border-color: #329F80;
+    background-color: #14386f;
+    border-color: #14386f;
     padding: 15px;
     word-break: normal;
     font-size: 13.5px;
@@ -8285,7 +8285,7 @@ strong {
 
 .top-header {
     color: #fff;
-    background-color: #329F80;
+    background-color: #14386f;
     font-weight: 500;
     letter-spacing: .5px;
 }
@@ -8542,7 +8542,7 @@ strong {
     position: absolute;
     height: 5px;
     width: 50%;
-    background: #329F80;
+    background: #14386f;
     top: 0;
     right: 50%;
     transition: all .2s ease;
@@ -8805,7 +8805,7 @@ strong {
     transform: rotateZ(45deg);
     margin-left: -5px;
     top: -5px;
-    background: #329F80;
+    background: #14386f;
     transform-style: preserve-3d;
     backface-visibility: hidden;
 }
@@ -9407,8 +9407,8 @@ strong {
         }
 
         .btnGroupLnd button.active {
-            background-color: #329F80;
-            border-color: #329F80;
+            background-color: #14386f;
+            border-color: #14386f;
             color: #fff;
         }
 
@@ -11383,7 +11383,7 @@ low-fee-timeline {
     transform: rotateZ(45deg);
     margin-left: -5px;
     top: -5px;
-    background: #329F80;
+    background: #14386f;
     transform-style: preserve-3d;
     backface-visibility: hidden;
     margin-bottom: -10px;
@@ -11534,7 +11534,7 @@ low-fee-timeline {
 
 
 .btn-link {
-    color: #329F80;
+    color: #14386f;
 }
 
     .btn-link:hover {
