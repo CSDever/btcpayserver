@@ -4,9 +4,9 @@
  * Licensed under MIT (https://github.com/BlackrockDigital/startbootstrap-creative/blob/master/LICENSE)
  */
 
- :root {
-     --off-white: #f9fafb;
- }
+:root {
+    background: linear-gradient(180deg, #9BC2FC 0%, #00245A 100%);
+}
 
 
 body,
@@ -17,14 +17,14 @@ html {
 }
 
 body {
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Orbitron', sans-serif;
     background: var(--off-white);
 }
 
 hr {
     max-width: 50px;
     border-width: 3px;
-    border-color: #329F80;
+    border-color: #1e3557;
 }
 
     hr.light {
@@ -37,7 +37,7 @@ h3,
 h4,
 h5,
 h6 {
-    font-family: 'Open Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Orbitron', sans-serif;
 }
 
 p {
@@ -82,7 +82,7 @@ body {
 
 #mainNav {
     border-color: rgba(34, 34, 34, 0.05);
-    background-color: #0F3723;
+    background-color: rgba(93, 150, 235, 0.80);
     font-family: 'Open Sans', 'Helvetica Neue', Arial, sans-serif;
     -webkit-transition: all 0.2s;
     -moz-transition: all 0.2s;
@@ -157,7 +157,7 @@ body {
 
         #mainNav.navbar-shrink {
             border-color: rgba(34, 34, 34, 0.05);
-            background-color: #0F3723;
+            background-color: rgba(15, 55, 35, 0.00);
         }
 
             #mainNav.navbar-shrink .navbar-brand {
@@ -221,7 +221,7 @@ header.masthead {
 
         header.masthead .header-content {
             position: absolute;
-            top: 50%;
+            top: 40%;
             padding: 0 50px;
             -webkit-transform: translateY(-50%);
             -ms-transform: translateY(-50%);
