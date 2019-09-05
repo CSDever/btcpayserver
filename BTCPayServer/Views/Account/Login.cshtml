@@ -7,48 +7,62 @@
 }
 
 <section>
-    <div>
-        <div class="modal-dialog modal-login">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Sign In</h4>
-                </div>
-                <div class="modal-body">
-                    <form asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                        <div class="form-group">
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <label for="Email" class="input-group-text"><span class="input-group-addon fa fa-user"></span></label>
-                                </div>
 
-                                <input asp-for="Email" class="form-control" placeholder="Email" required="required" />
-                            </div>
-                            <span asp-validation-for="Email" class="text-danger"></span>
-                        </div>
-                        <div class="form-group">
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <label for="Password" class="input-group-text"><span class="input-group-addon fa fa-lock"></span></label>
-                                </div>
-                                <input asp-for="Password" class="form-control" placeholder="Password" required="required" />
-                            </div>
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-primary btn-block btn-lg" id="LoginButton">Sign in</button>
-                        </div>
-                        <p class="hint-text"><a asp-action="ForgotPassword">Forgot your password?</a></p>
-                    </form>
-                </div>
-                @if (themeManager.ShowRegister)
-                {
-                <div class="modal-footer"><span>Don't have an account?&nbsp;<a asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]">Create one</a></span></div>
-                }
+
+    <div class="row mr-0">
+        <div class="col ml-md-5">
+            <div class="header-content-inner text-white">
+                <img src="~/img/logo-crowdstacks.png" height="90">
+                <hr />
+               
             </div>
         </div>
-    </div>
+        <div class="col-md-6">
+            <div class="modal-dialog modal-login">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Sign In</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <label for="Email" class="input-group-text"><span class="input-group-addon fa fa-user"></span></label>
+                                    </div>
+
+                                    <input asp-for="Email" class="form-control" placeholder="Email" required="required" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <label for="Password" class="input-group-text"><span class="input-group-addon fa fa-lock"></span></label>
+                                    </div>
+                                    <input asp-for="Password" class="form-control" placeholder="Password" required="required" />
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary btn-block btn-lg" id="LoginButton">Sign in</button>
+                            </div>
+                            <p class="hint-text"><a asp-action="ForgotPassword">Forgot your password?</a></p>
+                        </form>
+                    </div>
+                    @if (themeManager.ShowRegister)
+                    {
+                        <div class="modal-footer"><span>Don't have an account?&nbsp;<a asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]">Create one</a></span></div>
+                    }
+                </div>
+            </div>
+        </div>    </div>
+
 </section>
+
+<footer class="crowdFooter-2">
+</footer>
 @section Scripts {
     @await Html.PartialAsync("_ValidationScriptsPartial")
 }
