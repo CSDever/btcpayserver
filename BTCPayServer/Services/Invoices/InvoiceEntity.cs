@@ -297,12 +297,15 @@ namespace BTCPayServer.Services.Invoices
         }
 
         [JsonIgnore]
-        public string RedirectURL => FillPlaceholders(RedirectURLTemplate);
+        public Uri RedirectURL => FillPlaceholdersUri(RedirectURLTemplate);
 
-        private string FillPlaceholders(string v)
+        private Uri FillPlaceholdersUri(string v)
         {
-            return (v ?? string.Empty).Replace("{OrderId}", OrderId ?? "", StringComparison.OrdinalIgnoreCase)
+            var uriStr = (v ?? string.Empty).Replace("{OrderId}", OrderId ?? "", StringComparison.OrdinalIgnoreCase)
                                      .Replace("{InvoiceId}", Id ?? "", StringComparison.OrdinalIgnoreCase);
+            if (Uri.TryCreate(uriStr, UriKind.Absolute, out var uri) && (uri.Scheme == "http" || uri.Scheme == "https"))
+                return uri;
+            return null;
         }
 
         public bool RedirectAutomatically
@@ -336,7 +339,7 @@ namespace BTCPayServer.Services.Invoices
         }
 
         [JsonIgnore]
-        public string NotificationURL => FillPlaceholders(NotificationURLTemplate);
+        public Uri NotificationURL => FillPlaceholdersUri(NotificationURLTemplate);
         public string ServerUrl
         {
             get;

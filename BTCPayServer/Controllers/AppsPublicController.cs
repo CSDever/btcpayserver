@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using BTCPayServer.Configuration;
+using BTCPayServer.Data;
 using BTCPayServer.Filters;
 using BTCPayServer.ModelBinders;
 using BTCPayServer.Models;
@@ -144,7 +145,6 @@ namespace BTCPayServer.Controllers
                 {
                         
                     var choices = _AppService.Parse(settings.Template, settings.Currency);
-                    var updateNeeded = false;
                     foreach (var cartItem in cartItems)
                     {
                         var itemChoice = choices.FirstOrDefault(c => c.Id == cartItem.Key);
