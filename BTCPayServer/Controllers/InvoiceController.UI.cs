@@ -66,8 +66,8 @@ namespace BTCPayServer.Controllers
                 Fiat = _CurrencyNameTable.DisplayFormatCurrency(prodInfo.Price, prodInfo.Currency),
                 TaxIncluded = _CurrencyNameTable.DisplayFormatCurrency(prodInfo.TaxIncluded, prodInfo.Currency),
                 NotificationEmail = invoice.NotificationEmail,
-                NotificationUrl = invoice.NotificationURL,
-                RedirectUrl = invoice.RedirectURL,
+                NotificationUrl = invoice.NotificationURL?.AbsoluteUri,
+                RedirectUrl = invoice.RedirectURL?.AbsoluteUri,
                 ProductInformation = invoice.ProductInformation,
                 StatusException = invoice.ExceptionStatus,
                 Events = invoice.Events,
@@ -167,7 +167,6 @@ namespace BTCPayServer.Controllers
             return View(model);
         }
 
-        //TODO: abstract
         private async Task<PaymentModel> GetInvoiceModel(string invoiceId, PaymentMethodId paymentMethodId)
         {
             var invoice = await _InvoiceRepository.GetInvoice(invoiceId);
@@ -251,7 +250,7 @@ namespace BTCPayServer.Controllers
                 MaxTimeMinutes = (int)(invoice.ExpirationTime - invoice.InvoiceTime).TotalMinutes,
                 ItemDesc = invoice.ProductInformation.ItemDesc,
                 Rate = ExchangeRate(paymentMethod),
-                MerchantRefLink = invoice.RedirectURL ?? "/",
+                MerchantRefLink = invoice.RedirectURL?.AbsoluteUri ?? "/",
                 RedirectAutomatically = invoice.RedirectAutomatically,
                 StoreName = store.StoreName,
                 PeerInfo = (paymentMethodDetails as LightningLikePaymentMethodDetails)?.NodeInfo,
@@ -297,6 +296,7 @@ namespace BTCPayServer.Controllers
             };
 
             paymentMethodHandler.PreparePaymentModel(model, dto);
+            model.UISettings = paymentMethodHandler.GetCheckoutUISettings();
             model.PaymentMethodId = paymentMethodId.ToString();
             var expiration = TimeSpan.FromSeconds(model.ExpirationSeconds);
             model.TimeLeft = expiration.PrettyPrint();
@@ -424,7 +424,7 @@ namespace BTCPayServer.Controllers
                     Date = invoice.InvoiceTime,
                     InvoiceId = invoice.Id,
                     OrderId = invoice.OrderId ?? string.Empty,
-                    RedirectUrl = invoice.RedirectURL ?? string.Empty,
+                    RedirectUrl = invoice.RedirectURL?.AbsoluteUri ?? string.Empty,
                     AmountCurrency = _CurrencyNameTable.DisplayFormatCurrency(invoice.ProductInformation.Price, invoice.ProductInformation.Currency),
                     CanMarkInvalid = state.CanMarkInvalid(),
                     CanMarkComplete = state.CanMarkComplete(),
