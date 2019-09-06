@@ -8,7 +8,7 @@
 
 <div class="row">
 
-    <div class="col-md-8">
+    <div class="col-md-6">
         <form method="post">
             @if (!Model.ExposedSSH)
             {
@@ -35,22 +35,7 @@
                 <input asp-for="UserName" type="hidden" class="form-control" />
                 <span asp-validation-for="UserName" class="text-danger"></span>
             }
-            <div class="form-group">
-                <h5>Change domain name</h5>
-                <span>You can change the domain name of your server by following <a href="https://github.com/btcpayserver/btcpayserver-doc/blob/master/ChangeDomain.md">this guide</a></span>
-            </div>
 
-            <div class="form-group">
-                <div class="input-group">
-                    <input asp-for="DNSDomain" class="form-control" />
-                    <span class="input-group-btn">
-                        <button name="command" type="submit" class="btn btn-primary" value="changedomain" title="Change domain">
-                            <span class="fa fa-check"></span> Confirm
-                        </button>
-                    </span>
-                </div>
-                <span asp-validation-for="DNSDomain" class="text-danger"></span>
-            </div>
 
             <div class="form-group">
                 <h5>Update</h5>
@@ -71,6 +56,24 @@
                 </div>
             </div>
         </form>
+    </div>
+    <div class="col-6">
+        <div class="form-group">
+            <h5>Change domain name</h5>
+            <span>You can change the domain name of your server by following <a href="https://github.com/btcpayserver/btcpayserver-doc/blob/master/ChangeDomain.md">this guide</a></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-group">
+                <input asp-for="DNSDomain" class="form-control" />
+                <span class="input-group-btn">
+                    <button name="command" type="submit" class="btn btn-primary" value="changedomain" title="Change domain">
+                        <span class="fa fa-check"></span> Confirm
+                    </button>
+                </span>
+            </div>
+            <span asp-validation-for="DNSDomain" class="text-danger"></span>
+        </div>
     </div>
 </div>
 
