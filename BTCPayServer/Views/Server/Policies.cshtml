@@ -4,7 +4,7 @@
 }
 
 
-<partial name="_StatusMessage" for="@TempData["StatusMessage"]"/>
+<partial name="_StatusMessage" for="@TempData["StatusMessage"]" />
 @if (!this.ViewContext.ModelState.IsValid)
 {
     <div asp-validation-summary="All" class="text-danger"></div>
@@ -13,31 +13,26 @@
 <form method="post">
     <div class="form-group">
         <label asp-for="RequiresConfirmedEmail"></label>
-        <input asp-for="RequiresConfirmedEmail" type="checkbox" class="form-check-inline"/>
+        <input asp-for="RequiresConfirmedEmail" type="checkbox" class="form-check-inline" />
         <span asp-validation-for="RequiresConfirmedEmail" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="LockSubscription"></label>
-        <input asp-for="LockSubscription" type="checkbox" class="form-check-inline"/>
+        <input asp-for="LockSubscription" type="checkbox" class="form-check-inline" />
         <span asp-validation-for="LockSubscription" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="DiscourageSearchEngines"></label>
-        <input asp-for="DiscourageSearchEngines" type="checkbox" class="form-check-inline"/>
+        <input asp-for="DiscourageSearchEngines" type="checkbox" class="form-check-inline" />
         <span asp-validation-for="DiscourageSearchEngines" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="AllowLightningInternalNodeForAll"></label>
-        <input asp-for="AllowLightningInternalNodeForAll" type="checkbox" class="form-check-inline"/>
-        <span asp-validation-for="AllowLightningInternalNodeForAll" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="RootAppId"></label>
         <select asp-for="RootAppId" asp-items="@(new SelectList(ViewBag.AppsList, nameof(SelectListItem.Value), nameof(SelectListItem.Text), Model.RootAppId))" class="form-control"></select>
         @if (!Model.DomainToAppMapping.Any())
-             {
-                 <button type="submit" name="command" value="add-domain" class="btn btn-link"> Map specific domains to specific apps</button>
-             }
+        {
+            <button type="submit" name="command" value="add-domain" class="btn btn-link"> Map specific domains to specific apps</button>
+        }
     </div>
 
     @if (Model.DomainToAppMapping.Any())
@@ -56,7 +51,7 @@
                         <div class="col-sm-12 col-md-12 col-lg-10  py-2 ">
                             <div class="form-group">
                                 <label asp-for="DomainToAppMapping[index].Domain" class="control-label"></label>
-                                <input asp-for="DomainToAppMapping[index].Domain" class="form-control"/>
+                                <input asp-for="DomainToAppMapping[index].Domain" class="form-control" />
                                 <span asp-validation-for="DomainToAppMapping[index].Domain" class="text-danger"></span>
                             </div>
                             <div class="form-group">
@@ -66,8 +61,7 @@
                                                          nameof(SelectListItem.Value),
                                                          nameof(SelectListItem.Text),
                                                          Model.DomainToAppMapping[index].AppId))"
-                                        class="form-control">
-                                </select>
+                                        class="form-control"></select>
 
                                 <span asp-validation-for="DomainToAppMapping[index].AppId" class="text-danger"></span>
                             </div>
@@ -78,8 +72,7 @@
                                 Remove Destination
                             </button>
                             <button type="submit" title="Remove domain mapping" name="command" value="@($"remove-domain:{index}")"
-                                    class="d-none d-lg-block remove-domain-btn text-decoration-none h-100 align-middle btn text-danger btn-link fa fa-times rounded-0 pull-right">
-                            </button>
+                                    class="d-none d-lg-block remove-domain-btn text-decoration-none h-100 align-middle btn text-danger btn-link fa fa-times rounded-0 pull-right"></button>
                         </div>
                     </div>
                 </div>
@@ -92,12 +85,13 @@
 
 @section Scripts {
     <style>
-            .remove-domain-btn{
-                font-size: 1.5rem;
-                border-radius: 0;
+        .remove-domain-btn {
+            font-size: 1.5rem;
+            border-radius: 0;
+        }
+
+            .remove-domain-btn:hover {
+                background-color: #CCCCCC;
             }
-             .remove-domain-btn:hover{
-                       background-color: #CCCCCC;
-             }
     </style>
 }

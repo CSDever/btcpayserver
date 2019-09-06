@@ -13,13 +13,7 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-md-8">
-        <div class="form-group">
-            <h5>Bitcoin Average</h5>
-            <p>BTCPay relies on Bitcoin Average for getting crypto-currency to fiat rates</p>
-            <p>If you want BTCPay rate cache to be smaller than 15min, you should register to BitcoinAverage and get a paid API Key.</p>
-            <p>If your BTCPay server instance supports lot's of merchant or is used a lot, BitcoinAverage will rate limit your server, and invoice will be created using less accurate rates. (From Bitpay)<br /></p>
-        </div>
+    <div class="col-8">
         <form method="post">
             <label asp-for="PublicKey"></label>
             <div class="form-inline">
@@ -33,7 +27,7 @@
                 <input asp-for="CacheMinutes" class="form-control" />
                 <span asp-validation-for="CacheMinutes" class="text-danger"></span>
             </div>
-            @if(Model.RateLimits != null)
+            @if (Model.RateLimits != null)
             {
                 <h5>Current Bitcoin Average Quotas:</h5>
                 <table class="table table-sm removetopborder">
@@ -54,6 +48,15 @@
             <button type="submit" class="btn btn-primary" name="command" value="Save">Save</button>
         </form>
     </div>
+    <div class="col-4">
+        <div class="form-group">
+            <h5>Bitcoin Average</h5>
+            <p>BTCPay relies on Bitcoin Average for getting crypto-currency to fiat rates</p>
+            <p>If you want BTCPay rate cache to be smaller than 15min, you should register to BitcoinAverage and get a paid API Key.</p>
+            <p>If your BTCPay server instance supports lot's of merchant or is used a lot, BitcoinAverage will rate limit your server, and invoice will be created using less accurate rates. (From Bitpay)<br /></p>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {
