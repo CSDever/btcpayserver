@@ -1,12 +1,31 @@
 ﻿@{
-Layout = "/Views/Shared/_Layout_cs.cshtml";
-ViewBag.ShowMenu = ViewBag.ShowMenu ?? true;
+    Layout = "/Views/Shared/_Layout_cs.cshtml";
+    ViewBag.ShowMenu = ViewBag.ShowMenu ?? true;
 }
+@inject BTCPayServer.Services.BTCPayServerEnvironment env
 
 <section>
     <div class="container">
         <div class="row">
+
             <div class="col-md-3">
+                <a class="navbar-brand js-scroll-trigger" href="~/">
+                    <img src="~/img/logo.png" height="45">
+                    @if (env.NetworkType != NBitcoin.NetworkType.Mainnet)
+                    {
+                        <span class="badge badge-warning" style="font-size:10px;">@env.NetworkType.ToString()</span>
+                    }
+                </a>
+                @if (env.OnionUrl != null)
+                {
+                    <span>
+                        <a href="@env.OnionUrl" target="_blank">
+                            <img src="~/img/icons/onion.svg" width="26" height="32" />
+                        </a>
+                    </span>
+                }
+                <hr />
+
                 <h4 class="section-heading">@ViewData["MainTitle"]:</h4>
                 <h5>@ViewData["Title"]</h5>
                 <hr class="primary ml-0">
@@ -28,9 +47,9 @@ ViewBag.ShowMenu = ViewBag.ShowMenu ?? true;
     </div>
 </section>
 @section HeadScripts {
-@RenderSection("HeadScripts", required: false)
+    @RenderSection("HeadScripts", required: false)
 }
 
 @section Scripts {
-@RenderSection("Scripts", required: false)
+    @RenderSection("Scripts", required: false)
 }

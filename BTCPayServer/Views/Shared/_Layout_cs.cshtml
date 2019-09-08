@@ -35,7 +35,7 @@
     @RenderSection("HeaderContent", false)
 </head>
 
-<body id="page-top">
+<body id="page-top" class="">
 
     @{
         if (ViewBag.AlwaysShrinkNavBar == null)
@@ -48,25 +48,14 @@
     <!-- Navigation -->
     <nav class='navbar navbar-expand-lg navbar-dark fixed-top @additionalStyle' id="mainNav">
         <div class="container">
-            <a class="navbar-brand js-scroll-trigger" href="~/">
-                <img src="~/img/logo.png" height="45">
-                @if (env.NetworkType != NBitcoin.NetworkType.Mainnet)
-                {
-                    <span class="badge badge-warning" style="font-size:10px;">@env.NetworkType.ToString()</span>
-                }
-            </a>
-            @if (env.OnionUrl != null)
-            {
-                <span>
-                    <a href="@env.OnionUrl" target="_blank">
-                        <img src="~/img/icons/onion.svg" width="26" height="32" />
-                    </a>
-                </span>
-            }
+       
             <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarResponsive">
+                <div class="col-sm-3 ml-auto text-center text-white">
+                   
+                </div>
                 <ul class="navbar-nav ml-auto">
                     @if (SignInManager.IsSignedIn(User))
                     {
@@ -84,7 +73,8 @@
                         </li>
                         <li class="nav-item">
                             <a asp-area="" asp-controller="Account" asp- asp-action="Logout" title="Logout" class="nav-link js-scroll-trigger" id="Logout"><i class="fa fa-sign-out"></i></a>
-                        </li>}
+                        </li>
+                    }
                     else if (env.IsSecure)
                     {
                         if (themeManager.ShowRegister)
