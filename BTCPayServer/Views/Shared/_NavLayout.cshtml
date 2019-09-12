@@ -2,7 +2,12 @@
     Layout = "/Views/Shared/_Layout_cs.cshtml";
     ViewBag.ShowMenu = ViewBag.ShowMenu ?? true;
 }
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
 @inject BTCPayServer.Services.BTCPayServerEnvironment env
+@inject BTCPayServer.HostedServices.NBXplorerDashboard dashboard
+@inject BTCPayServer.HostedServices.CssThemeManager themeManager
 
 <section>
     <div class="container">
@@ -30,7 +35,22 @@
                 <h5>@ViewData["Title"]</h5>
                 <hr class="primary ml-0">
 
+                <div class="row justify-content-center">
 
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        if (User.IsInRole(Roles.ServerAdmin))
+                        {
+                            <a asp-area="" asp-controller="Server" asp-action="ListUsers" title="Server Settings" class="nav-link js-scroll-trigger" id="ServerSettings"><i class="fa fa-cog"></i></a>
+                            <a asp-area="" asp-controller="UserStores" asp-action="ListStores" title="Stores" class="nav-link js-scroll-trigger" id="Stores"><i class="fa fa-bank"></i></a>
+                            <a asp-area="" asp-controller="Manage" asp-action="Index" title="My Settings" class="nav-link js-scroll-trigger" id="MySettings"><i class="fa fa-user"></i></a>
+                            <a asp-area="" asp-controller="Account" asp- asp-action="Logout" title="Logout" class="nav-link js-scroll-trigger" id="Logout"><i class="fa fa-sign-out"></i></a>
+
+                        }
+
+                    }
+
+                </div>
 
 
                 @if (ViewBag.ShowMenu)
