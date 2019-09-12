@@ -2,69 +2,122 @@
 @model ListAppsViewModel
 @{
     ViewData["Title"] = "Apps";
+    ViewBag.ShowMenu = ViewBag.ShowMenu ?? true;
+
 }
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject BTCPayServer.Services.BTCPayServerEnvironment env
+@inject BTCPayServer.HostedServices.NBXplorerDashboard dashboard
+@inject BTCPayServer.HostedServices.CssThemeManager themeManager
+
 <section>
     <div class="container">
-        @if (TempData.ContainsKey("TempDataProperty-StatusMessage"))
-        {
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <partial name="_StatusMessage" for="@TempData["TempDataProperty-StatusMessage"]" />
+        <div class="row">
+            <div class="col-md-3">
+                <a class="navbar-brand js-scroll-trigger" href="~/">
+                    <img src="~/img/logo.png" height="45">
+                    @if (env.NetworkType != NBitcoin.NetworkType.Mainnet)
+                    {
+                        <span class="badge badge-warning" style="font-size:10px;">@env.NetworkType.ToString()</span>
+                    }
+                </a>
+                @if (env.OnionUrl != null)
+                {
+                    <span>
+                        <a href="@env.OnionUrl" target="_blank">
+                            <img src="~/img/icons/onion.svg" width="26" height="32" />
+                        </a>
+                    </span>
+                }
+                <hr />
+
+                <h2>@ViewData["Title"]</h2>
+                <p>Create and manage apps.</p>
+                <hr class="primary ml-0">
+
+                <div class="row justify-content-center">
+
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        if (User.IsInRole(Roles.ServerAdmin))
+                        {
+
+                            <a asp-area="" asp-controller="Server" asp-action="ListUsers" title="Server Settings" class="nav-link js-scroll-trigger" id="ServerSettings"><i class="fa fa-cog"></i></a>
+                            <a asp-area="" asp-controller="Manage" asp-action="Index" title="My Settings" class="nav-link js-scroll-trigger" id="MySettings"><i class="fa fa-user"></i></a>
+                            <a asp-area="" asp-controller="Account" asp- asp-action="Logout" title="Logout" class="nav-link js-scroll-trigger" id="Logout"><i class="fa fa-sign-out"></i></a>
+
+                        }
+
+                    }
+
+                </div>
+
+
+                @if (ViewBag.ShowMenu)
+                {
+                    @await Html.PartialAsync("_SideNavLayout")
+                }
+            </div>
+
+            <div class="col-9 pt-md-5">
+                @if (TempData.ContainsKey("TempDataProperty-StatusMessage"))
+                {
+                    <div class="row">
+                        <div class="col-lg-12 text-center">
+                            <partial name="_StatusMessage" for="@TempData["TempDataProperty-StatusMessage"]" />
+                        </div>
+                    </div>
+                }
+
+
+                <div class="row no-gutter" style="margin-bottom: 5px;">
+                    <div class="col-lg-6">
+                        <a asp-action="CreateApp" class="btn btn-primary" role="button" id="CreateNewApp"><span class="fa fa-plus"></span> Create a new app</a>
+                        <a href="https://docs.btcpayserver.org/features/apps" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                    </div>
+                </div>
+                <div class="row">
+                    <table class="table table-sm table-responsive-md">
+                        <thead>
+                            <tr>
+                                <th>Store</th>
+                                <th>Name</th>
+                                <th>App type</th>
+                                <th style="text-align:right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var app in Model.Apps)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (app.IsOwner)
+                                        {
+                                            <span><a asp-action="UpdateStore" asp-controller="Stores" asp-route-storeId="@app.StoreId">@app.StoreName</a></span>
+                                        }
+                                        else
+                                        {
+                                            <span>@app.StoreName</span>
+                                        }
+                                    </td>
+                                    <td>@app.AppName</td>
+                                    <td>@app.AppType</td>
+                                    <td style="text-align:right">
+                                        @if (app.IsOwner)
+                                        {
+                                            <a asp-action="@app.UpdateAction" asp-controller="Apps" asp-route-appId="@app.Id">Settings</a><span> - </span>
+                                        }
+                                        <a asp-action="@app.ViewAction" asp-controller="AppsPublic" asp-route-appId="@app.Id">View</a><span> - </span>
+                                        <a asp-action="DeleteApp" asp-route-appId="@app.Id">Remove</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        }
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <h2 class="section-heading">@ViewData["Title"]</h2>
-                <hr class="primary">
-                <p>Create and manage apps.</p>
-            </div>
-        </div>
-
-        <div class="row no-gutter" style="margin-bottom: 5px;">
-            <div class="col-lg-6">
-                <a asp-action="CreateApp" class="btn btn-primary" role="button" id="CreateNewApp"><span class="fa fa-plus"></span> Create a new app</a>
-                <a href="https://docs.btcpayserver.org/features/apps" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
-            </div>
-        </div>
-        <div class="row">
-            <table class="table table-sm table-responsive-md">
-                <thead>
-                    <tr>
-                        <th>Store</th>
-                        <th>Name</th>
-                        <th>App type</th>
-                        <th style="text-align:right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var app in Model.Apps)
-                    {
-                        <tr>
-                            <td>
-                                @if (app.IsOwner)
-                                {
-                                    <span><a asp-action="UpdateStore" asp-controller="Stores" asp-route-storeId="@app.StoreId">@app.StoreName</a></span>
-                                }
-                                else
-                                {
-                                    <span>@app.StoreName</span>
-                                }
-                            </td>
-                            <td>@app.AppName</td>
-                            <td>@app.AppType</td>
-                            <td style="text-align:right">
-                                @if (app.IsOwner)
-                                {
-                                    <a asp-action="@app.UpdateAction" asp-controller="Apps" asp-route-appId="@app.Id">Settings</a><span> - </span>
-                                }
-                                <a asp-action="@app.ViewAction" asp-controller="AppsPublic" asp-route-appId="@app.Id">View</a><span> - </span>
-                                <a asp-action="DeleteApp" asp-route-appId="@app.Id">Remove</a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
         </div>
     </div>
 </section>
