@@ -22,6 +22,7 @@
     <link rel="manifest" href="~/manifest.json">
 
     <link href="@this.Context.Request.GetRelativePathOrAbsolute(themeManager.BootstrapUri)" rel="stylesheet" />
+    <link href="@this.Context.Request.GetRelativePathOrAbsolute(themeManager.ThemeUri)" rel="stylesheet" />
     @if (Model.CustomCSSLink != null)
     {
         <link href="@Model.CustomCSSLink" rel="stylesheet" />
@@ -43,19 +44,34 @@
             grid-gap: .5rem;
         }
 
-            .card-deck .card:only-of-type {
-                max-width: 320px;
-                margin: auto;
-            }
-            
-            .js-cart-item-count::-webkit-inner-spin-button, 
-            .js-cart-item-count::-webkit-outer-spin-button { 
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                margin: 0; 
-            }
-            
+        .card-deck .card:only-of-type {
+            max-width: 320px;
+            margin: auto;
+        }
+
+        .js-cart-item-minus .fa,
+        .js-cart-item-plus .fa {
+            background: #fff;
+            border-radius: 50%;
+            width: 17px;
+            height: 17px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .js-cart-item-count {
+            -moz-appearance:textfield;
+            margin: 0;
+            text-align: right;
+        }
+
+        .js-cart-item-count::-webkit-inner-spin-button,
+        .js-cart-item-count::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
     </style>
     @if (!string.IsNullOrEmpty(Model.EmbeddedCSS))
     {
@@ -69,10 +85,10 @@
         <tr data-id="{id}">
             {image}
             <td class="align-middle pr-0 pl-2"><b>{title}</b></td>
-            <td class="align-middle px-0" align="right">
+            <td class="align-middle px-0">
                 <a class="js-cart-item-remove btn btn-link" href="#"><i class="fa fa-trash text-muted"></i></a>
             </td>
-            <td class="align-middle px-0" align="right">
+            <td class="align-middle px-0">
                 <div class="input-group align-items-center">
                     <div class="input-group-prepend">
                         <a class="js-cart-item-minus btn btn-link px-2" href="#"><i class="fa fa-minus-circle fa-fw text-danger"></i></a>
@@ -85,7 +101,7 @@
                     </div>
                 </div>
             </td>
-            <td class="align-middle" align="right">{price}</td>
+            <td class="align-middle text-right">{price}</td>
         </tr>
     </script>
 
@@ -112,7 +128,7 @@
 <script id="template-cart-extra" type="text/template">
        @if(Model.ShowCustomAmount){
             <tr>
-                <td colspan="5" class="border-0 pb-0">
+                <th colspan="5" class="border-0 pb-0">
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-shopping-cart fa-fw"></i></span>
@@ -122,13 +138,13 @@
                             <a class="js-cart-custom-amount-remove btn btn-danger" href="#"><i class="fa fa-times"></i></a>
                         </div>
                     </div>
-                </td>
+                </th>
             </tr>
         }
         @if (@Model.ShowDiscount)
         {
             <tr>
-                <td colspan="5" class="border-top-0">
+                <th colspan="5" class="border-top-0">
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-percent fa-fw"></i></span>
@@ -138,7 +154,7 @@
                             <a class="js-cart-discount-remove btn btn-danger" href="#"><i class="fa fa-times"></i></a>
                         </div>
                     </div>
-                </td>
+                </th>
             </tr>
         }
     </script>
@@ -146,11 +162,11 @@
     <script id="template-cart-tip" type="text/template">
         @if (Model.EnableTips)
         {
-            <tr class="h5">
-                <td colspan="5" class="border-top-0 pt-4">@Model.CustomTipText</td>
+            <tr>
+                <th colspan="5" class="border-top-0 pt-4 h5">@Model.CustomTipText</th>
             </tr>
             <tr>
-                <td colspan="5" class="border-0">
+                <th colspan="5" class="border-0">
                     <div class="input-group mb-2">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-money fa-fw"></i></span>
@@ -173,18 +189,22 @@
                         }
 
                     </div>
-                </td>
+                </th>
             </tr>}
     </script>
 
     <script id="template-cart-total" type="text/template">
-        <tr class="h4 table-light">
-            <td colspan="1" class="pb-4">Total</td>
-            <td colspan="4" align="right" class="pb-4">
+        <tr>
+            <th colspan="1" class="pb-4 h4">Total</th>
+            <th colspan="4" class="pb-4 h4 text-right">
                 <span class="js-cart-total">{total}</span>
-            </td>
+            </th>
         </tr>
     </script>
+    @if (this.TempData.HasStatusMessage())
+    {
+        <partial name="_StatusMessage" />
+    }
 
     @if (Model.EnableShoppingCart)
     {
@@ -202,36 +222,36 @@
                     <div class="modal-body p-0">
                         <table id="js-cart-summary" class="table m-0">
                             <tbody class="my-3">
-                                <tr class="h5">
-                                    <td colspan="2" class="border-top-0">Summary</td>
+                                <tr>
+                                    <td colspan="2" class="border-top-0 h5">Summary</td>
                                 </tr>
-                                <tr class="h6">
-                                    <td class="border-0 pb-0">Total products</td>
-                                    <td align="right" class="border-0 pb-0">
+                                <tr>
+                                    <td class="border-0 pb-0 h6">Total products</td>
+                                    <td align="right" class="border-0 pb-0 h6">
                                         <span class="js-cart-summary-products text-nowrap"></span>
                                     </td>
                                 </tr>
                                 @if (Model.ShowDiscount)
                                 {
-                                    <tr class="h6">
-                                        <td class="border-0 pb-y">Discount</td>
-                                        <td align="right" class="border-0 pb-y">
+                                    <tr>
+                                        <td class="border-0 pb-y h6">Discount</td>
+                                        <td align="right" class="border-0 pb-y h6">
                                             <span class="js-cart-summary-discount text-nowrap"></span>
                                         </td>
                                     </tr>
                                 }
                                 @if (Model.EnableTips)
                                 {
-                                    <tr class="h6">
-                                        <td class="border-top-0 pt-0">Tip</td>
-                                        <td align="right" class="border-top-0 pt-0">
+                                    <tr>
+                                        <td class="border-top-0 pt-0 h6">Tip</td>
+                                        <td align="right" class="border-top-0 pt-0 h6">
                                             <span class="js-cart-summary-tip text-nowrap"></span>
                                         </td>
                                     </tr>
                                 }
-                                <tr class="h3 table-light">
-                                    <td>Total</td>
-                                    <td align="right">
+                                <tr>
+                                    <td class="h3 table-light">Total</td>
+                                    <td class="h3 table-light text-right">
                                         <span class="js-cart-summary-total text-nowrap"></span>
                                     </td>
                                 </tr>
@@ -265,7 +285,7 @@
                 <div class="p-2 p-sm-4">
                     <div class="row">
                         <div class="col-sm-4 col-lg-2 order-sm-last text-right mb-2">
-                            <a class="js-cart btn btn-lg btn-warning text-white text-right" href="#">
+                            <a class="js-cart btn btn-lg btn-outline-primary" href="#">
                                 <i class="fa fa-shopping-basket"></i>&nbsp;
                                 <span class="badge badge-light badge-pill">
                                     <span id="js-cart-items">0</span>
@@ -314,7 +334,7 @@
                                     <span class="text-muted small">@String.Format(Model.ButtonText, @item.Price.Formatted)</span>
                                      @if (item.Inventory.HasValue)
                                      {
-                                    
+
                                          <div class="w-100 pt-2 text-center text-muted">
                                              @if (item.Inventory > 0)
                                              {
@@ -338,16 +358,16 @@
 
             <!-- Sidebar  -->
             <nav id="sidebar" class="bg-dark">
-                <div class="bg-warning p-3 clearfix">
+                <div class="bg-primary p-3 clearfix">
                     <h3 class="text-white m-0 pull-left">Cart</h3>
                     <a class="js-cart btn btn-sm bg-white text-black pull-right ml-5" href="#">
                         <i class="fa fa-times fa-lg"></i>
                     </a>
-                    <a class="js-cart-destroy btn bg-white text-danger pull-right" href="#" style="display: none;">Empty cart <i class="fa fa-trash fa-fw fa-lg"></i></a>
+                    <a class="js-cart-destroy btn btn-danger pull-right" href="#" style="display: none;">Empty cart <i class="fa fa-trash fa-fw fa-lg"></i></a>
                 </div>
 
-                <table id="js-cart-list" class="table table-responsive bg-light mt-0 mb-0">
-                    <thead class="thead-dark">
+                <table id="js-cart-list" class="table table-responsive table-light mt-0 mb-0">
+                    <thead>
                         <tr>
                             <th colspan="3" width="55%">Product</th>
                             <th class="text-center" width="20%">
@@ -361,8 +381,8 @@
                     <tbody></tbody>
                 </table>
 
-                <table id="js-cart-extra" class="table bg-light mt-0 mb-0">
-                    <tbody></tbody>
+                <table id="js-cart-extra" class="table table-light mt-0 mb-0">
+                    <thead></thead>
                 </table>
 
                 <button id="js-cart-confirm" data-toggle="modal" data-target="#cartModal" class="btn btn-primary btn-lg btn-block mb-3 p-3" disabled="disabled" type="submit">
@@ -370,7 +390,7 @@
                 </button>
 
                 <div class="text-center mb-5 pb-5">
-                    <img src="~/img/logo-white.png" height="40">
+                    <img src="~/img/logo.svg" class="logo" height="40">
                 </div>
             </nav>
         </div>
@@ -449,7 +469,7 @@
                                     </div>
                                 }else if (anyInventoryItems)
                                 {
-                                    <div class="w-100 pt-2">&nbsp</div> 
+                                    <div class="w-100 pt-2">&nbsp</div>
                                 }
                             </div>
                         </div>

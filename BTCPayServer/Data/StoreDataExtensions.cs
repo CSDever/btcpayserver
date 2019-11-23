@@ -15,29 +15,6 @@ namespace BTCPayServer.Data
 {
     public static class StoreDataExtensions
     {
-        public static bool HasClaim(this StoreData storeData, string claim)
-        {
-            return storeData.GetClaims().Any(c => c.Type == claim && c.Value == storeData.Id);
-        }
-        public static Claim[] GetClaims(this StoreData storeData)
-        {
-            List<Claim> claims = new List<Claim>();
-            claims.AddRange(storeData.AdditionalClaims);
-#pragma warning disable CS0612 // Type or member is obsolete
-            var role = storeData.Role;
-#pragma warning restore CS0612 // Type or member is obsolete
-            if (role == StoreRoles.Owner)
-            {
-                claims.Add(new Claim(Policies.CanModifyStoreSettings.Key, storeData.Id));
-            }
-
-            if (role == StoreRoles.Owner || role == StoreRoles.Guest || storeData.GetStoreBlob().AnyoneCanInvoice)
-            {
-                claims.Add(new Claim(Policies.CanCreateInvoice.Key, storeData.Id));
-            }
-            return claims.ToArray();
-        }
-
 #pragma warning disable CS0618
         public static PaymentMethodId GetDefaultPaymentId(this StoreData storeData, BTCPayNetworkProvider networks)
         {
@@ -68,11 +45,10 @@ namespace BTCPayServer.Data
         }
 #pragma warning restore CS0618
 
-        static Network Dummy = Network.Main;
-
+        
         public static StoreBlob GetStoreBlob(this StoreData storeData)
         {
-            var result = storeData.StoreBlob == null ? new StoreBlob() : new Serializer(Dummy).ToObject<StoreBlob>(Encoding.UTF8.GetString(storeData.StoreBlob));
+            var result = storeData.StoreBlob == null ? new StoreBlob() : new Serializer(null).ToObject<StoreBlob>(Encoding.UTF8.GetString(storeData.StoreBlob));
             if (result.PreferredExchange == null)
                 result.PreferredExchange = CoinAverageRateProvider.CoinAverageName;
             return result;
@@ -80,8 +56,8 @@ namespace BTCPayServer.Data
 
         public static bool SetStoreBlob(this StoreData storeData, StoreBlob storeBlob)
         {
-            var original = new Serializer(Dummy).ToString(storeData.GetStoreBlob());
-            var newBlob = new Serializer(Dummy).ToString(storeBlob);
+            var original = new Serializer(null).ToString(storeData.GetStoreBlob());
+            var newBlob = new Serializer(null).ToString(storeBlob);
             if (original == newBlob)
                 return false;
             storeData.StoreBlob = Encoding.UTF8.GetBytes(newBlob);
@@ -108,7 +84,7 @@ namespace BTCPayServer.Data
                 foreach (var strat in strategies.Properties())
                 {
                     var paymentMethodId = PaymentMethodId.Parse(strat.Name);
-                    var network = networks.GetNetwork<BTCPayNetwork>(paymentMethodId.CryptoCode);
+                    var network = networks.GetNetwork<BTCPayNetworkBase>(paymentMethodId.CryptoCode);
                     if (network != null)
                     {
                         if (network == networks.BTC && paymentMethodId.PaymentType == PaymentTypes.BTCLike && btcReturned)

@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BTCPayServer.Services.Invoices;
-using Microsoft.EntityFrameworkCore;
 using BTCPayServer.Migrations;
+using Microsoft.EntityFrameworkCore;
 
 namespace BTCPayServer.Services.Stores
 {
@@ -48,9 +48,7 @@ namespace BTCPayServer.Services.Stores
                     }).ToArrayAsync())
                     .Select(us =>
                     {
-#pragma warning disable CS0612 // Type or member is obsolete
                         us.Store.Role = us.Role;
-#pragma warning restore CS0612 // Type or member is obsolete
                         return us.Store;
                     }).FirstOrDefault();
             }
@@ -90,9 +88,7 @@ namespace BTCPayServer.Services.Stores
                     .ToArrayAsync())
                     .Select(u =>
                     {
-#pragma warning disable CS0612 // Type or member is obsolete
                         u.StoreData.Role = u.Role;
-#pragma warning restore CS0612 // Type or member is obsolete
                         return u.StoreData;
                     }).ToArray();
             }
@@ -109,7 +105,7 @@ namespace BTCPayServer.Services.Stores
                     await ctx.SaveChangesAsync();
                     return true;
                 }
-                catch (DbUpdateException)
+                catch (Microsoft.EntityFrameworkCore.DbUpdateException)
                 {
                     return false;
                 }
@@ -136,7 +132,7 @@ namespace BTCPayServer.Services.Stores
             {
                 var userStore = new UserStore() { StoreDataId = storeId, ApplicationUserId = userId };
                 ctx.UserStore.Add(userStore);
-                ctx.Entry<UserStore>(userStore).State = EntityState.Deleted;
+                ctx.Entry<UserStore>(userStore).State = Microsoft.EntityFrameworkCore.EntityState.Deleted;
                 await ctx.SaveChangesAsync();
 
             }
@@ -193,7 +189,7 @@ namespace BTCPayServer.Services.Stores
         {
             using (var ctx = _ContextFactory.CreateContext())
             {
-                var storeUser = await ctx.UserStore.FirstOrDefaultAsync(o => o.StoreDataId == storeId && o.ApplicationUserId == userId);
+                var storeUser = await ctx.UserStore.AsQueryable().FirstOrDefaultAsync(o => o.StoreDataId == storeId && o.ApplicationUserId == userId);
                 if (storeUser == null)
                     return;
                 ctx.UserStore.Remove(storeUser);

@@ -6,7 +6,7 @@ using BTCPayServer.Services.Stores;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using OpenIddict.Validation;
+using OpenIddict.Validation.AspNetCore;
 
 namespace BTCPayServer.Controllers.RestApi
 {
@@ -15,7 +15,7 @@ namespace BTCPayServer.Controllers.RestApi
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
+    [Authorize(AuthenticationSchemes = AuthenticationSchemes.OpenId)]
     public class TestController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -40,11 +40,15 @@ namespace BTCPayServer.Controllers.RestApi
         }
 
         [HttpGet("me/is-admin")]
+        [Authorize(Policy = Policies.CanModifyServerSettings.Key, AuthenticationSchemes = AuthenticationSchemes.OpenId)]
         public bool AmIAnAdmin()
-        { 
-            return  User.IsInRole(Roles.ServerAdmin);
+        {
+            return true;
         }
+
         [HttpGet("me/stores")]
+        [Authorize(Policy = Policies.CanModifyStoreSettings.Key,
+            AuthenticationSchemes = AuthenticationSchemes.OpenId)]
         public async Task<StoreData[]> GetCurrentUserStores()
         {
             return await _storeRepository.GetStoresByUserId(_userManager.GetUserId(User));
@@ -52,7 +56,8 @@ namespace BTCPayServer.Controllers.RestApi
 
 
         [HttpGet("me/stores/{storeId}/can-edit")]
-        [Authorize(Policy = Policies.CanModifyStoreSettings.Key, AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
+        [Authorize(Policy = Policies.CanModifyStoreSettings.Key,
+            AuthenticationSchemes = AuthenticationSchemes.OpenId)]
         public bool CanEdit(string storeId)
         {
             return true;

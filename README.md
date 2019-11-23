@@ -32,7 +32,7 @@ Thanks to the [apps](https://github.com/btcpayserver/btcpayserver-doc/blob/maste
 * [How to build](#how-to-build)
 * [How to run](#how-to-run)
 * [How to debug](#how-to-debug)
-* [Dependencies](#dependencies)
+* [Dependencies](#other-dependencies)
 
 ## Features
 
@@ -60,7 +60,7 @@ Thanks to the [apps](https://github.com/btcpayserver/btcpayserver-doc/blob/maste
 
 Firstly, decide if you want to host an instance yourself or use a [third-party host](https://docs.btcpayserver.org/deployment/thirdpartyhosting). If you've chosen to self-host, we documented plenty [ways to deploy BTCPay Server](https://docs.btcpayserver.org/deployment/deployment). 
 
-After successful deployment, make sure to check our [getting started](https://docs.btcpayserver.org/btcpay-basics/gettingstarted) and [walkthrough](https://docs.btcpayserver.org/btcpay-basics/walkthrough) guides. In case you would like to use Lightning Network, see [Lightning guide](https://docs.btcpayserver.org/features/lightningnetwork).
+After successful deployment, make sure to check our [getting started](https://docs.btcpayserver.org/getting-started/registeraccount) and [walkthrough](https://docs.btcpayserver.org/btcpay-basics/walkthrough) guides. In case you would like to use Lightning Network, see [Lightning guide](https://docs.btcpayserver.org/features/lightningnetwork).
 
 ## Documentation
 
@@ -135,18 +135,52 @@ For more information, see the documentation: [How to deploy a BTCPay server inst
 
 ## Supported altcoins
 
-Bitcoin is the only focus of the project and its core developers. However, opt in integrations are present for several altcoins:
+Bitcoin is the only focus of the project and its core developers. However, opt in integrations are present for [several altcoins](https://github.com/btcpayserver/btcpayserver-doc/blob/master/Altcoins.md). Altcoins are maintained by their respective communities.
 
-* Bitcore (BTX)
-* Dash (DASH)
-* Dogecoin (DOGE)
-* Feathercoin (FTC)
-* Groestlcoin (GRS)
-* Litecoin (LTC)
-* Monacoin (MONA)
-* Polis (POLIS)
-* Viacoin (VIA)
-* BGold (BTG) (also known as Bitcoin Gold)
-* BPlus (XBC) (also known as Bitcoin Plus)
+## Supporters
 
-Altcoins are maintained by their respective communities.
+The BTCPay Server Project is proudly supported by these entities through the [BTCPay Server Foundation](https://foundation.btcpayserver.org/).
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://twitter.com/sqcrypto" target="_blank">
+          <img  src="BTCPayServer/wwwroot/img/squarecrypto.svg" alt="Square Crypto" height=100>
+          <br/>
+          <span>Square Crypto</span>
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://www.dglab.com/en/" target="_blank">
+          <img  src="BTCPayServer/wwwroot/img/dglab.svg" alt="DG Lab" height=100>
+          <br/>
+          <span>DG Lab</span>
+        </a>
+      </td>
+       <td align="center" valign="middle">
+        <a href="https://acinq.co/" target="_blank">
+          <img  src="BTCPayServer/wwwroot/img/acinq-logo.svg" alt="ACINQ" height=100>
+          <br/>
+          <span>ACINQ</span>
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://lunanode.com" target="_blank">
+          <img  src="BTCPayServer/wwwroot/img/lunanode.svg" alt="LunaNode" height=100>
+          <br/>
+          <span>LunaNode</span>
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://walletofsatoshi.com/" target="_blank">
+          <img  src="BTCPayServer/wwwroot/img/walletofsatoshi.svg" alt="Wallet of Satoshi" height=100>
+          <br/>
+          <span>Wallet of Satoshi</span>
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+If you'd like to support the project, please visit the [donation page](https://btcpayserver.org/donate/).

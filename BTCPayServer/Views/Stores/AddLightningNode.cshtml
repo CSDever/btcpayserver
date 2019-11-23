@@ -4,7 +4,7 @@
     ViewData.SetActivePageAndTitle(StoreNavPages.Index, "Add lightning node (Experimental)");
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
+<partial name="_StatusMessage" />
 
 <div class="alert alert-warning alert-dismissible" role="alert">
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -12,7 +12,7 @@
         <span>Before you proceed, please understand that Lightning Network is still in the experimental stage. Do not put the money you can't afford to lose. There is a high risk of you losing the money.</span>
     </p>
     <p>
-        Take time to familiarize yourself with the risk. There's no backup for LND or c-lightning keys in BTCPay. Your keys are in a hot-wallet. This means :
+        Take time to familiarize yourself with the risk. There's no backup lightning keys automatically done by BTCPayServer. Your keys are in a hot-wallet. This means :
     </p>
     <ul>
         <li>Most of BTCPay Server deployments run on a pruned node, which, while working, is not officially supported by lightning network implementations.</li>
@@ -77,7 +77,7 @@
                 @if (Model.InternalLightningNode != null)
                 {
                     <p class="form-text text-muted">
-                        You can use the internal lightning node by <a href="#" onclick="$('#lightningurl').val('@Model.InternalLightningNode'); return false;">clicking here</a>
+                        You can use the internal lightning node by <a href="#" id="internal-ln-node-setter" onclick="$('#lightningurl').val('@Model.InternalLightningNode'); return false;">clicking here</a>
                     </p>
                 }
             </div>
@@ -85,7 +85,7 @@
                 <label asp-for="Enabled"></label>
                 <input asp-for="Enabled" type="checkbox" class="form-check" />
             </div>
-            <button name="command" type="submit" value="save" class="btn btn-primary">Submit</button>
+            <button id="save" name="command" type="submit" value="save" class="btn btn-primary">Submit</button>
             <button name="command" type="submit" value="test" class="btn btn-secondary">Test connection</button>
             <a 
                 class="btn btn-secondary"

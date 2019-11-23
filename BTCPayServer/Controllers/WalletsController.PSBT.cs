@@ -60,7 +60,7 @@ namespace BTCPayServer.Controllers
                 vm.Decoded = psbt.ToString();
                 vm.PSBT = psbt.ToBase64();
             }
-            return View(vm ?? new WalletPSBTViewModel());
+            return View(vm ?? new WalletPSBTViewModel() { CryptoCode = walletId.CryptoCode });
         }
         [HttpPost]
         [Route("{walletId}/psbt")]
@@ -69,6 +69,8 @@ namespace BTCPayServer.Controllers
             WalletId walletId,
             WalletPSBTViewModel vm, string command = null)
         {
+            if (command == null)
+                return await WalletPSBT(walletId, vm);
             var network = NetworkProvider.GetNetwork<BTCPayNetwork>(walletId.CryptoCode);
             var psbt = await vm.GetPSBT(network.NBitcoinNetwork);
             if (psbt == null)
@@ -78,7 +80,7 @@ namespace BTCPayServer.Controllers
             }
             switch (command)
             {
-                case null:
+                case "decode":
                     vm.Decoded = psbt.ToString();
                     ModelState.Remove(nameof(vm.PSBT));
                     ModelState.Remove(nameof(vm.FileName));
@@ -86,18 +88,20 @@ namespace BTCPayServer.Controllers
                     vm.PSBT = psbt.ToBase64();
                     vm.FileName = vm.UploadedPSBTFile?.FileName;
                     return View(vm);
+                case "vault":
+                    return ViewVault(walletId, psbt);
                 case "ledger":
                     return ViewWalletSendLedger(psbt);
                 case "update":
-                    var derivationSchemeSettings = await GetDerivationSchemeSettings(walletId);
+                    var derivationSchemeSettings = GetDerivationSchemeSettings(walletId);
                     psbt = await UpdatePSBT(derivationSchemeSettings, psbt, network);
                     if (psbt == null)
                     {
                         ModelState.AddModelError(nameof(vm.PSBT), "You need to update your version of NBXplorer");
                         return View(vm);
                     }
-                    StatusMessage = "PSBT updated!";
-                    return RedirectToAction(nameof(WalletPSBT), new { walletId = walletId, psbt = psbt.ToBase64(), FileName = vm.FileName });
+                    TempData[WellKnownTempData.SuccessMessage] = "PSBT updated!";
+                    return RedirectToWalletPSBT(walletId, psbt, vm.FileName);
                 case "seed":
                     return SignWithSeed(walletId, psbt.ToBase64());
                 case "broadcast":
@@ -140,7 +144,7 @@ namespace BTCPayServer.Controllers
             vm.SigningKey = signingKey;
             vm.SigningKeyPath = signingKeyPath;
 
-            var derivationSchemeSettings = await GetDerivationSchemeSettings(walletId);
+            var derivationSchemeSettings = GetDerivationSchemeSettings(walletId);
             if (derivationSchemeSettings == null)
                 return NotFound();
             try
@@ -154,7 +158,8 @@ namespace BTCPayServer.Controllers
         private async Task FetchTransactionDetails(DerivationSchemeSettings derivationSchemeSettings, WalletPSBTReadyViewModel vm, BTCPayNetwork network)
         {
             var psbtObject = PSBT.Parse(vm.PSBT, network.NBitcoinNetwork);
-            psbtObject = await UpdatePSBT(derivationSchemeSettings, psbtObject, network) ?? psbtObject;
+            if (!psbtObject.IsAllFinalized())
+                psbtObject = await UpdatePSBT(derivationSchemeSettings, psbtObject, network) ?? psbtObject;
             IHDKey signingKey = null;
             RootedKeyPath signingKeyPath = null;
             try
@@ -258,12 +263,14 @@ namespace BTCPayServer.Controllers
             [ModelBinder(typeof(WalletIdModelBinder))]
             WalletId walletId, WalletPSBTReadyViewModel vm, string command = null)
         {
+            if (command == null)
+                return await WalletPSBTReady(walletId, vm.PSBT, vm.SigningKey, vm.SigningKeyPath);
             PSBT psbt = null;
             var network = NetworkProvider.GetNetwork<BTCPayNetwork>(walletId.CryptoCode);
             try
             {
                 psbt = PSBT.Parse(vm.PSBT, network.NBitcoinNetwork);
-                var derivationSchemeSettings = await GetDerivationSchemeSettings(walletId);
+                var derivationSchemeSettings = GetDerivationSchemeSettings(walletId);
                 if (derivationSchemeSettings == null)
                     return NotFound();
                 await FetchTransactionDetails(derivationSchemeSettings, vm, network);
@@ -295,38 +302,17 @@ namespace BTCPayServer.Controllers
                     vm.GlobalError = "Error while broadcasting: " + ex.Message;
                     return View(vm);
                 }
-                return await RedirectToWalletTransaction(walletId, transaction);
+                return RedirectToWalletTransaction(walletId, transaction);
             }
             else if (command == "analyze-psbt")
             {
-                return RedirectToAction(nameof(WalletPSBT), new { walletId = walletId, psbt = psbt.ToBase64() });
+                return RedirectToWalletPSBT(walletId, psbt);
             }
             else
             {
                 vm.GlobalError = "Unknown command";
                 return View(vm);
             }
-        }
-
-        private IActionResult ViewPSBT<T>(PSBT psbt, IEnumerable<T> errors = null)
-        {
-            return ViewPSBT(psbt, null, errors?.Select(e => e.ToString()).ToList());
-        }
-        private IActionResult ViewPSBT(PSBT psbt, IEnumerable<string> errors = null)
-        {
-            return ViewPSBT(psbt, null, errors);
-        }
-        private IActionResult ViewPSBT(PSBT psbt, string fileName, IEnumerable<string> errors = null)
-        {
-            ModelState.Remove(nameof(WalletPSBTViewModel.PSBT));
-            ModelState.Remove(nameof(WalletPSBTViewModel.FileName));
-            return View(nameof(WalletPSBT), new WalletPSBTViewModel()
-            {
-                Decoded = psbt.ToString(),
-                FileName = fileName ?? string.Empty,
-                PSBT = psbt.ToBase64(),
-                Errors = errors?.ToList()
-            });
         }
 
         private IActionResult FilePSBT(PSBT psbt, string fileName)
@@ -353,8 +339,8 @@ namespace BTCPayServer.Controllers
                 return View(vm);
             }
             sourcePSBT = sourcePSBT.Combine(psbt);
-            StatusMessage = "PSBT Successfully combined!";
-            return ViewPSBT(sourcePSBT);
+            TempData[WellKnownTempData.SuccessMessage] = "PSBT Successfully combined!";
+            return RedirectToWalletPSBT(walletId, sourcePSBT);
         }
     }
 }

@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
 using NBXplorer.DerivationStrategy;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace BTCPayServer.Controllers
 {
@@ -88,8 +89,7 @@ namespace BTCPayServer.Controllers
                         var segwit = network.NBitcoinNetwork.Consensus.SupportSegwit;
                         var derivation = new DerivationStrategyFactory(network.NBitcoinNetwork).CreateDirectDerivationStrategy(getxpubResult.ExtPubKey, new DerivationStrategyOptions()
                         {
-                            P2SH = segwit,
-                            Legacy = !segwit
+                            ScriptPubKeyType = segwit ? ScriptPubKeyType.SegwitP2SH : ScriptPubKeyType.Legacy
                         });
                         getxpubResult.DerivationScheme = derivation;
                         getxpubResult.RootFingerprint = (await hw.GetExtPubKey(network, new KeyPath(), normalOperationTimeout.Token)).ExtPubKey.PubKey.GetHDFingerPrint();
@@ -120,8 +120,8 @@ namespace BTCPayServer.Controllers
             return new EmptyResult();
         }
 
-        
-        
+
+
         private void SetExistingValues(StoreData store, DerivationSchemeViewModel vm)
         {
             var derivation = GetExistingDerivationStrategy(vm.CryptoCode, store);
@@ -141,8 +141,6 @@ namespace BTCPayServer.Controllers
                 .FirstOrDefault(d => d.PaymentId == id);
             return existing;
         }
-        
-        
 
         [HttpPost]
         [Route("{storeId}/derivations/{cryptoCode}")]
@@ -163,7 +161,7 @@ namespace BTCPayServer.Controllers
             vm.Network = network;
             vm.RootKeyPath = network.GetRootKeyPath();
             DerivationSchemeSettings strategy = null;
-            
+
             var wallet = _WalletProvider.GetWallet(network);
             if (wallet == null)
             {
@@ -174,11 +172,11 @@ namespace BTCPayServer.Controllers
             {
                 if (!DerivationSchemeSettings.TryParseFromJson(vm.Config, network, out strategy))
                 {
-                    vm.StatusMessage = new StatusMessageModel()
+                    TempData.SetStatusMessageModel(new StatusMessageModel()
                     {
                         Severity = StatusMessageModel.StatusSeverity.Error,
                         Message = "Config file was not in the correct format"
-                    }.ToString();
+                    });
                     vm.Confirmation = false;
                     return View(vm);
                 }
@@ -188,11 +186,11 @@ namespace BTCPayServer.Controllers
             {
                 if (!DerivationSchemeSettings.TryParseFromColdcard(await ReadAllText(vm.ColdcardPublicFile), network, out strategy))
                 {
-                    vm.StatusMessage = new StatusMessageModel()
+                    TempData.SetStatusMessageModel(new StatusMessageModel()
                     {
                         Severity = StatusMessageModel.StatusSeverity.Error,
                         Message = "Coldcard public file was not in the correct format"
-                    }.ToString();
+                    });
                     vm.Confirmation = false;
                     return View(vm);
                 }
@@ -247,7 +245,7 @@ namespace BTCPayServer.Controllers
             var willBeExcluded = !vm.Enabled;
 
             var showAddress = // Show addresses if:
-                // - If the user is testing the hint address in confirmation screen
+                              // - If the user is testing the hint address in confirmation screen
                 (vm.Confirmation && !string.IsNullOrWhiteSpace(vm.HintAddress)) ||
                 // - The user is clicking on continue after changing the config
                 (!vm.Confirmation && oldConfig != vm.Config) ||
@@ -272,14 +270,16 @@ namespace BTCPayServer.Controllers
                 }
 
                 await _Repo.UpdateStore(store);
-                if (oldConfig != vm.Config)
-                    StatusMessage = $"Derivation settings for {network.CryptoCode} has been modified.";
                 if (willBeExcluded != wasExcluded)
                 {
                     var label = willBeExcluded ? "disabled" : "enabled";
-                    StatusMessage = $"On-Chain payments for {network.CryptoCode} has been {label}.";
+                    TempData[WellKnownTempData.SuccessMessage] = $"On-Chain payments for {network.CryptoCode} has been {label}.";
                 }
-                return RedirectToAction(nameof(UpdateStore), new {storeId = storeId});
+                else
+                {
+                    TempData[WellKnownTempData.SuccessMessage] = $"Derivation settings for {network.CryptoCode} has been modified.";
+                }
+                return RedirectToAction(nameof(UpdateStore), new { storeId = storeId });
             }
             else if (!string.IsNullOrEmpty(vm.HintAddress))
             {
@@ -310,7 +310,7 @@ namespace BTCPayServer.Controllers
                 }
 
                 vm.HintAddress = "";
-                vm.StatusMessage =
+                TempData[WellKnownTempData.SuccessMessage] =
                     "Address successfully found, please verify that the rest is correct and click on \"Confirm\"";
                 ModelState.Remove(nameof(vm.HintAddress));
                 ModelState.Remove(nameof(vm.DerivationScheme));

@@ -461,7 +461,7 @@ namespace BTCPayServer.Services.Invoices
                 }
                 else if (paymentId.PaymentType == PaymentTypes.BTCLike)
                 {
-                    var scheme = info.Network.UriScheme;
+                    var scheme = ((BTCPayNetwork)info.Network).UriScheme;
 
                     var minerInfo = new MinerFeeInfo();
                     minerInfo.TotalFee = accounting.NetworkFee.Satoshi;
@@ -543,7 +543,7 @@ namespace BTCPayServer.Services.Invoices
         public PaymentMethodDictionary GetPaymentMethods()
         {
             PaymentMethodDictionary paymentMethods = new PaymentMethodDictionary();
-            var serializer = new Serializer(Dummy);
+            var serializer = new Serializer(null);
 #pragma warning disable CS0618
             if (PaymentMethod != null)
             {
@@ -574,7 +574,7 @@ namespace BTCPayServer.Services.Invoices
         public void SetPaymentMethods(PaymentMethodDictionary paymentMethods)
         {
             var obj = new JObject();
-            var serializer = new Serializer(Dummy);
+            var serializer = new Serializer(null);
 #pragma warning disable CS0618
             foreach (var v in paymentMethods)
             {
@@ -911,7 +911,7 @@ namespace BTCPayServer.Services.Invoices
     {
         [NotMapped]
         [JsonIgnore]
-        public BTCPayNetwork Network { get; set; }
+        public BTCPayNetworkBase Network { get; set; }
         public int Version { get; set; }
         public DateTimeOffset ReceivedTime
         {

@@ -32,12 +32,12 @@ namespace BTCPayServer.Controllers
     {
         [HttpGet]
         [Route("invoices/{invoiceId}")]
-        [Authorize(AuthenticationSchemes = Policies.CookieAuthentication)]
+        [Authorize(AuthenticationSchemes = AuthenticationSchemes.Cookie)]
         public async Task<IActionResult> Invoice(string invoiceId)
         {
             var invoice = (await _InvoiceRepository.GetInvoices(new InvoiceQuery()
             {
-                InvoiceId = invoiceId,
+                InvoiceId = new[] {invoiceId},
                 UserId = GetUserId(),
                 IncludeAddresses = true,
                 IncludeEvents = true
@@ -71,9 +71,7 @@ namespace BTCPayServer.Controllers
                 ProductInformation = invoice.ProductInformation,
                 StatusException = invoice.ExceptionStatus,
                 Events = invoice.Events,
-                PosData = PosDataParser.ParsePosData(invoice.PosData),
-                StatusMessage = StatusMessage,
-                
+                PosData = PosDataParser.ParsePosData(invoice.PosData)
             };
 
             model.Addresses = invoice.HistoricalAddresses.Select(h =>
@@ -179,7 +177,7 @@ namespace BTCPayServer.Controllers
                 paymentMethodId = store.GetDefaultPaymentId(_NetworkProvider);
                 isDefaultPaymentId = true;
             }
-            BTCPayNetworkBase network = _NetworkProvider.GetNetwork<BTCPayNetwork>(paymentMethodId.CryptoCode);
+            BTCPayNetworkBase network = _NetworkProvider.GetNetwork<BTCPayNetworkBase>(paymentMethodId.CryptoCode);
             if (network == null && isDefaultPaymentId)
             {
                 //TODO: need to look into a better way for this as it does not scale
@@ -225,7 +223,6 @@ namespace BTCPayServer.Controllers
                    (1m + (changelly.AmountMarkupPercentage / 100m)))
                 : (decimal?)null;
 
-            
             var paymentMethodHandler = _paymentMethodHandlerDictionary[paymentMethodId];
             var model = new PaymentModel()
             {
@@ -235,16 +232,17 @@ namespace BTCPayServer.Controllers
                 InvoiceId = invoice.Id,
                 DefaultLang = storeBlob.DefaultLang ?? "en",
                 HtmlTitle = storeBlob.HtmlTitle ?? "BTCPay Invoice",
-                CustomCSSLink = storeBlob.CustomCSS?.AbsoluteUri,
-                CustomLogoLink = storeBlob.CustomLogo?.AbsoluteUri,
+                CustomCSSLink = storeBlob.CustomCSS,
+                CustomLogoLink = storeBlob.CustomLogo,
                 CryptoImage = Request.GetRelativePathOrAbsolute(paymentMethodHandler.GetCryptoImage(paymentMethodId)),
-                LightningAmountInSatoshi = storeBlob.LightningAmountInSatoshi,
                 BtcAddress = paymentMethodDetails.GetPaymentDestination(),
                 BtcDue = accounting.Due.ToString(),
                 OrderAmount = (accounting.TotalDue - accounting.NetworkFee).ToString(),
                 OrderAmountFiat = OrderAmountFromInvoice(network.CryptoCode, invoice.ProductInformation),
                 CustomerEmail = invoice.RefundMail,
                 RequiresRefundEmail = storeBlob.RequiresRefundEmail,
+                ShowRecommendedFee = storeBlob.ShowRecommendedFee,
+                FeeRate = paymentMethodDetails.GetFeeRate(),
                 ExpirationSeconds = Math.Max(0, (int)(invoice.ExpirationTime - DateTimeOffset.UtcNow).TotalSeconds),
                 MaxTimeSeconds = (int)(invoice.ExpirationTime - invoice.InvoiceTime).TotalSeconds,
                 MaxTimeMinutes = (int)(invoice.ExpirationTime - invoice.InvoiceTime).TotalMinutes,
@@ -295,7 +293,7 @@ namespace BTCPayServer.Controllers
                                           .ToList()
             };
 
-            paymentMethodHandler.PreparePaymentModel(model, dto);
+            paymentMethodHandler.PreparePaymentModel(model, dto, storeBlob);
             model.UISettings = paymentMethodHandler.GetCheckoutUISettings();
             model.PaymentMethodId = paymentMethodId.ToString();
             var expiration = TimeSpan.FromSeconds(model.ExpirationSeconds);
@@ -358,6 +356,7 @@ namespace BTCPayServer.Controllers
                         break;
                 }
             }
+            catch(WebSocketException) { }
             finally
             {
                 leases.Dispose();
@@ -395,16 +394,19 @@ namespace BTCPayServer.Controllers
 
         [HttpGet]
         [Route("invoices")]
-        [Authorize(AuthenticationSchemes = Policies.CookieAuthentication)]
+        [Authorize(AuthenticationSchemes = AuthenticationSchemes.Cookie)]
         [BitpayAPIConstraint(false)]
         public async Task<IActionResult> ListInvoices(string searchTerm = null, int skip = 0, int count = 50, int timezoneOffset = 0)
         {
+            var fs = new SearchString(searchTerm);
+            var storeIds = fs.GetFilterArray("storeid") != null ? fs.GetFilterArray("storeid") : new List<string>().ToArray();
+
             var model = new InvoicesModel
             {
                 SearchTerm = searchTerm,
                 Skip = skip,
                 Count = count,
-                StatusMessage = StatusMessage,
+                StoreIds = storeIds,
                 TimezoneOffset = timezoneOffset
             };
             InvoiceQuery invoiceQuery = GetInvoiceQuery(searchTerm, timezoneOffset);
@@ -455,7 +457,7 @@ namespace BTCPayServer.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = Policies.CookieAuthentication)]
+        [Authorize(AuthenticationSchemes = AuthenticationSchemes.Cookie)]
         [BitpayAPIConstraint(false)]
         public async Task<IActionResult> Export(string format, string searchTerm = null, int timezoneOffset = 0)
         {
@@ -489,14 +491,14 @@ namespace BTCPayServer.Controllers
 
         [HttpGet]
         [Route("invoices/create")]
-        [Authorize(AuthenticationSchemes = Policies.CookieAuthentication)]
+        [Authorize(AuthenticationSchemes = AuthenticationSchemes.Cookie)]
         [BitpayAPIConstraint(false)]
         public async Task<IActionResult> CreateInvoice()
         {
             var stores = new SelectList(await _StoreRepository.GetStoresByUserId(GetUserId()), nameof(StoreData.Id), nameof(StoreData.StoreName), null);
             if (stores.Count() == 0)
             {
-                StatusMessage = "Error: You need to create at least one store before creating a transaction";
+                TempData[WellKnownTempData.ErrorMessage] = "You need to create at least one store before creating a transaction";
                 return RedirectToAction(nameof(UserStoresController.ListStores), "UserStores");
             }
 
@@ -505,28 +507,16 @@ namespace BTCPayServer.Controllers
 
         [HttpPost]
         [Route("invoices/create")]
-        [Authorize(AuthenticationSchemes = Policies.CookieAuthentication)]
+        [Authorize(Policy = Policies.CanCreateInvoice.Key, AuthenticationSchemes = AuthenticationSchemes.Cookie)]
         [BitpayAPIConstraint(false)]
         public async Task<IActionResult> CreateInvoice(CreateInvoiceModel model, CancellationToken cancellationToken)
         {
             var stores = await _StoreRepository.GetStoresByUserId(GetUserId());
             model.Stores = new SelectList(stores, nameof(StoreData.Id), nameof(StoreData.StoreName), model.StoreId);
-
             model.AvailablePaymentMethods = GetPaymentMethodsSelectList();
-
-            var store = stores.FirstOrDefault(s => s.Id == model.StoreId);
-            if (store == null)
-            {
-                ModelState.AddModelError(nameof(model.StoreId), "Store not found");
-            }
+            var store = HttpContext.GetStoreData();
             if (!ModelState.IsValid)
             {
-                return View(model);
-            }
-            StatusMessage = null;
-            if (!store.HasClaim(Policies.CanCreateInvoice.Key))
-            {
-                ModelState.AddModelError(nameof(model.StoreId), "You need to be owner of this store to create an invoice");
                 return View(model);
             }
 
@@ -534,15 +524,6 @@ namespace BTCPayServer.Controllers
             {
                 ModelState.AddModelError(nameof(model.StoreId), "You need to configure the derivation scheme in order to create an invoice");
                 return View(model);
-            }
-
-
-            if (StatusMessage != null)
-            {
-                return RedirectToAction(nameof(StoresController.UpdateStore), "Stores", new
-                {
-                    storeId = store.Id
-                });
             }
 
             try
@@ -565,7 +546,7 @@ namespace BTCPayServer.Controllers
                     })
                 }, store, HttpContext.Request.GetAbsoluteRoot(), cancellationToken: cancellationToken);
 
-                StatusMessage = $"Invoice {result.Data.Id} just created!";
+                TempData[WellKnownTempData.SuccessMessage] = $"Invoice {result.Data.Id} just created!";
                 return RedirectToAction(nameof(ListInvoices));
             }
             catch (BitpayHttpException ex)
@@ -577,24 +558,21 @@ namespace BTCPayServer.Controllers
 
         [HttpPost]
         [Route("invoices/{invoiceId}/changestate/{newState}")]
-        [Authorize(AuthenticationSchemes = Policies.CookieAuthentication)]
+        [Authorize(AuthenticationSchemes = AuthenticationSchemes.Cookie)]
         [BitpayAPIConstraint(false)]
         public async Task<IActionResult> ChangeInvoiceState(string invoiceId, string newState)
         {
             var invoice = (await _InvoiceRepository.GetInvoices(new InvoiceQuery()
             {
-                InvoiceId = invoiceId,
+                InvoiceId = new[] {invoiceId},
                 UserId = GetUserId()
             })).FirstOrDefault();
-
             var model = new InvoiceStateChangeModel();
             if (invoice == null)
             {
                 model.NotFound = true;
                 return NotFound(model);
             }
-
-
             if (newState == "invalid")
             {
                 await _InvoiceRepository.UpdatePaidInvoiceToInvalid(invoiceId);
@@ -615,13 +593,6 @@ namespace BTCPayServer.Controllers
         {
             public bool NotFound { get; set; }
             public string StatusString { get; set; }
-        }
-
-        [TempData]
-        public string StatusMessage
-        {
-            get;
-            set;
         }
 
         private string GetUserId()

@@ -12,7 +12,7 @@
     </style>
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
+<partial name="_StatusMessage" />
 <div class="row">
     <div class="col-md-6">
         <div asp-validation-summary="All" class="text-danger"></div>
@@ -45,12 +45,14 @@
                     <div class="dropdown mt-2 text-right">
                         <div class="btn-group">
                             <button class="btn btn-link dropdown-toggle" type="button" id="hardwarewlletimportdropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Import from hardware device
+                                Import from...
                             </button>
-                            <div class="dropdown-menu  dropdown-menu-right w-100" aria-labelledby="hardwarewlletimportdropdown">
-                                <button class="dropdown-item" type="button" data-toggle="modal" data-target="#coldcardimport">Coldcard</button>
-                                <button class="dropdown-item check-for-ledger" data-toggle="modal" data-target="#ledgerimport" type="button">Ledger Wallet</button>
-                                @* <button class="dropdown-item check-for-trezor" type="button" data-toggle="modal" data-target="#trezorimport">Trezor</button> *@
+                            <div class="dropdown-menu  dropdown-menu-right" aria-labelledby="hardwarewlletimportdropdown">
+                                <button class="dropdown-item" type="button" data-toggle="modal" data-target="#coldcardimport">... Coldcard (air gap)</button>
+                                <button class="dropdown-item check-for-ledger" data-toggle="modal" data-target="#ledgerimport" type="button">... Ledger Wallet</button>
+                                @if (Model.CryptoCode == "BTC") {
+                                <button class="dropdown-item check-for-vault" data-toggle="modal" data-target="#btcpayservervault" type="button">... the vault (preview)</button>
+                                }
                             </div>
                         </div>
                     </div>
@@ -109,8 +111,10 @@
                     <input asp-for="KeyPath" class="form-control" readonly />
                 </div>
                 <div class="form-group">
-                    <label asp-for="Enabled"></label>
-                    <input asp-for="Enabled" type="checkbox" class="form-check" />
+                    <div class="form-check">
+                        <input asp-for="Enabled" type="checkbox" class="form-check-input" />
+                        <label asp-for="Enabled" class="form-check-label"></label>
+                    </div>
                 </div>
                 <button name="command" type="submit" class="btn btn-primary" value="save" id="Continue">Continue</button>
             }
@@ -161,9 +165,8 @@
     @await Html.PartialAsync("_ValidationScriptsPartial")
     <script src="~/js/ledgerwebsocket.js" type="text/javascript" defer="defer"></script>
     <script src="~/js/StoreAddDerivationScheme.js" type="text/javascript" defer="defer"></script>
-    <script src="~/vendor/trezor/trezor.js-umd.min.js" defer="defer"></script>
-    <script src="~/js/trezor/trezor-client.js" type="text/javascript" defer="defer"></script>
-    <script src="~/js/trezor/trezor-add-derivation-scheme.js" type="text/javascript" defer="defer"></script>
+    <script src="~/js/vaultbridge.js" type="text/javascript" defer="defer"></script>
+    <script src="~/js/vaultbridge.ui.js" type="text/javascript" defer="defer"></script>
     <script>
         window.coinName = "@Model.Network.DisplayName.ToLowerInvariant()";
     </script>

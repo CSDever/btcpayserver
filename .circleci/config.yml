@@ -2,7 +2,7 @@ version: 2
 jobs:
   fast_tests:
     machine:
-        docker_layer_caching: true
+        enabled: true
     steps:
       - checkout
       - run:
@@ -10,7 +10,7 @@ jobs:
             cd .circleci && ./run-tests.sh "Fast=Fast"
   selenium_tests:
     machine:
-        docker_layer_caching: true
+        enabled: true
     steps:
       - checkout
       - run:
@@ -18,7 +18,7 @@ jobs:
             cd .circleci && ./run-tests.sh "Selenium=Selenium"
   integration_tests:
     machine:
-        docker_layer_caching: true
+        enabled: true
     steps:
       - checkout
       - run:
@@ -26,18 +26,22 @@ jobs:
             cd .circleci && ./run-tests.sh "Integration=Integration"
   external_tests:
     machine:
-        docker_layer_caching: true
+        enabled: true
     steps:
       - checkout
       - run:
           command: |
-            cd .circleci && ./run-tests.sh "ExternalIntegration=ExternalIntegration"
+            if [ "$CIRCLE_PROJECT_USERNAME" == "btcpayserver" ] && [ "$CIRCLE_PROJECT_REPONAME" == "btcpayserver" ]; then
+                cd .circleci && ./run-tests.sh "ExternalIntegration=ExternalIntegration"
+            else
+              echo "Skipping running ExternalIntegration tests outside of context of main user and repository that have access to secrets"
+            fi
 
 
   # publish jobs require $DOCKERHUB_REPO, $DOCKERHUB_USER, $DOCKERHUB_PASS defined
   amd64:
     machine:
-      docker_layer_caching: true
+        enabled: true
     steps:
       - checkout  
       - run:
@@ -50,7 +54,7 @@ jobs:
 
   arm32v7:
     machine:
-      docker_layer_caching: true
+        enabled: true
     steps:
       - checkout  
       - run:
@@ -100,15 +104,16 @@ workflows:
             # ignore any commit on any branch by default
             branches:
               ignore: /.*/
-            # only act on version tags
+            # only act on version tags v1.0.0.88
+            # OR feature tags like vlndseedbackup
             tags:
-              only: /v[1-9]+(\.[0-9]+)*/
+              only: /(v[1-9]+(\.[0-9]+)*)|(v[a-z]+)/
       - arm32v7:
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: /v[1-9]+(\.[0-9]+)*/
+              only: /(v[1-9]+(\.[0-9]+)*)|(v[a-z]+)/
       - multiarch:
           requires:
             - amd64
@@ -117,4 +122,4 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /v[1-9]+(\.[0-9]+)*/
+              only: /(v[1-9]+(\.[0-9]+)*)|(v[a-z]+)/

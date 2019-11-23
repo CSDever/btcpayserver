@@ -20,7 +20,8 @@ namespace BTCPayServer.Data
             InvoiceExpiration = 15;
             MonitoringExpiration = 1440;
             PaymentTolerance = 0;
-            RequiresRefundEmail = true;
+            ShowRecommendedFee = true;
+            RecommendedFeeBlockTarget = 1;
         }
 
         [Obsolete("Use NetworkFeeMode instead")]
@@ -38,6 +39,10 @@ namespace BTCPayServer.Data
         }
 
         public bool RequiresRefundEmail { get; set; }
+
+        public bool ShowRecommendedFee { get; set; }
+
+        public int RecommendedFeeBlockTarget { get; set; }
 
         CurrencyPair[] _DefaultCurrencyPairs;
         [JsonProperty("defaultCurrencyPairs", ItemConverterType = typeof(CurrencyPairJsonConverter))]
@@ -87,10 +92,9 @@ namespace BTCPayServer.Data
         public CurrencyValue LightningMaxValue { get; set; }
         public bool LightningAmountInSatoshi { get; set; }
 
-        [JsonConverter(typeof(UriJsonConverter))]
-        public Uri CustomLogo { get; set; }
-        [JsonConverter(typeof(UriJsonConverter))]
-        public Uri CustomCSS { get; set; }
+        public string CustomLogo { get; set; }
+        
+        public string CustomCSS { get; set; }
         public string HtmlTitle { get; set; }
 
         public bool RateScripting { get; set; }

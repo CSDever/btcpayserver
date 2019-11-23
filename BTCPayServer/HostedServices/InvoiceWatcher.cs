@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
 using BTCPayServer.Events;
 using BTCPayServer.Services.Invoices;
+using System.Threading.Channels;
 
 namespace BTCPayServer.HostedServices
 {
@@ -179,7 +180,7 @@ namespace BTCPayServer.HostedServices
         {
             if (invoiceId == null)
                 throw new ArgumentNullException(nameof(invoiceId));
-            _WatchRequests.Add(invoiceId);
+            _WatchRequests.Writer.TryWrite(invoiceId);
         }
 
         private async Task Wait(string invoiceId)
@@ -205,7 +206,7 @@ namespace BTCPayServer.HostedServices
 
         }
 
-        BlockingCollection<string> _WatchRequests = new BlockingCollection<string>(new ConcurrentQueue<string>());
+        Channel<string> _WatchRequests = Channel.CreateUnbounded<string>();
 
         Task _Loop;
         CancellationTokenSource _Cts;
@@ -245,9 +246,7 @@ namespace BTCPayServer.HostedServices
         async Task StartLoop(CancellationToken cancellation)
         {
             Logs.PayServer.LogInformation("Start watching invoices");
-            await Task.Delay(1).ConfigureAwait(false); // Small hack so that the caller does not block on GetConsumingEnumerable
-
-            foreach (var invoiceId in _WatchRequests.GetConsumingEnumerable(cancellation))
+            while (await _WatchRequests.Reader.WaitToReadAsync(cancellation) && _WatchRequests.Reader.TryRead(out var invoiceId))
             {
                 int maxLoop = 5;
                 int loopCount = -1;
@@ -315,8 +314,9 @@ namespace BTCPayServer.HostedServices
                     var paymentData = payment.GetCryptoPaymentData();
                     if (paymentData is Payments.Bitcoin.BitcoinLikePaymentData onChainPaymentData)
                     {
+                        var network = payment.Network as BTCPayNetwork;
                         // Do update if confirmation count in the paymentData is not up to date
-                        if ((onChainPaymentData.ConfirmationCount < payment.Network.MaxTrackedConfirmation && payment.Accounted)
+                        if ((onChainPaymentData.ConfirmationCount < network.MaxTrackedConfirmation && payment.Accounted)
                             && (onChainPaymentData.Legacy || invoice.MonitoringExpiration < DateTimeOffset.UtcNow))
                         {
                             var transactionResult = await _ExplorerClientProvider.GetExplorerClient(payment.GetCryptoCode())?.GetTransactionAsync(onChainPaymentData.Outpoint.Hash);
@@ -325,7 +325,7 @@ namespace BTCPayServer.HostedServices
                             payment.SetCryptoPaymentData(onChainPaymentData);
 
                             // we want to extend invoice monitoring until we reach max confirmations on all onchain payment methods
-                            if (confirmationCount < payment.Network.MaxTrackedConfirmation)
+                            if (confirmationCount < network.MaxTrackedConfirmation)
                                 extendInvoiceMonitoring = true;
                             
                             return payment;

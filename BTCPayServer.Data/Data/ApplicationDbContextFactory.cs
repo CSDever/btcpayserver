@@ -45,7 +45,11 @@ namespace BTCPayServer.Data
 
         class CustomNpgsqlMigrationsSqlGenerator : NpgsqlMigrationsSqlGenerator
         {
+#if NETCOREAPP21
             public CustomNpgsqlMigrationsSqlGenerator(MigrationsSqlGeneratorDependencies dependencies) : base(dependencies)
+#else
+            public CustomNpgsqlMigrationsSqlGenerator(MigrationsSqlGeneratorDependencies dependencies,  IMigrationsAnnotationProvider annotations, Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal.INpgsqlOptions opts) : base(dependencies, annotations, opts)
+#endif
             {
             }
 
@@ -91,10 +95,10 @@ namespace BTCPayServer.Data
                 builder.UseSqlite(_ConnectionString, o => o.MigrationsAssembly("BTCPayServer.Data"));
             else if (_Type == DatabaseType.Postgres)
                 builder
-                    .UseNpgsql(_ConnectionString, o => o.MigrationsAssembly("BTCPayServer.Data"))
+                    .UseNpgsql(_ConnectionString, o => o.MigrationsAssembly("BTCPayServer.Data").EnableRetryOnFailure(10))
                     .ReplaceService<IMigrationsSqlGenerator, CustomNpgsqlMigrationsSqlGenerator>();
             else if (_Type == DatabaseType.MySQL)
-                builder.UseMySql(_ConnectionString, o => o.MigrationsAssembly("BTCPayServer.Data"));
+                builder.UseMySql(_ConnectionString, o => o.MigrationsAssembly("BTCPayServer.Data").EnableRetryOnFailure(10));
         }
     }
 }

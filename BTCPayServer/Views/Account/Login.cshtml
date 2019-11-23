@@ -1,9 +1,8 @@
 ﻿@model LoginViewModel
-@inject SignInManager<ApplicationUser> SignInManager
 @inject BTCPayServer.HostedServices.CssThemeManager themeManager
-
 @{
     ViewData["Title"] = "Log in";
+    Layout = "_WelcomeLayout.cshtml";
 }
 
 <section>

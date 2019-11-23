@@ -6,7 +6,7 @@
     ViewData.SetActivePageAndTitle(WalletsNavPages.Send);
 }
 
-<div class="row no-gutters">
+<div class="row">
     <div class="@(Model.Outputs.Count==1? "col-lg-6 transaction-output-form": "col-lg-8")">
         <form method="post">
             <input type="hidden" asp-for="Divisibility" />
@@ -37,7 +37,7 @@
                     <div class="input-group">
                         <input asp-for="Outputs[0].Amount" type="number" step="any" asp-format="{0}" class="form-control output-amount" />
                         <div class="input-group-prepend">
-                            <span class="input-group-text text-muted fiat-value" style="display:none;"></span>
+                            <span class="input-group-text fiat-value" style="display:none;"></span>
                         </div>
                     </div>
                     <span asp-validation-for="Outputs[0].Amount" class="text-danger"></span>
@@ -68,7 +68,7 @@
                                         <div class="input-group">
                                             <input asp-for="Outputs[index].Amount" type="number" step="any" asp-format="{0}" class="form-control output-amount" />
                                             <div class="input-group-prepend">
-                                                <span class="input-group-text text-muted fiat-value" style="display:none;"></span>
+                                                <span class="input-group-text fiat-value" style="display:none;"></span>
                                             </div>
                                         </div>
                                         <p class="form-text text-muted crypto-info">
@@ -78,9 +78,11 @@
                                         <span asp-validation-for="Outputs[index].Amount" class="text-danger"></span>
                                     </div>
                                     <div class="form-group">
-                                        <label asp-for="Outputs[index].SubtractFeesFromOutput" class="control-label"></label>
-                                        <input type="checkbox" asp-for="Outputs[index].SubtractFeesFromOutput" class="form-check subtract-fees" />
-                                        <span asp-validation-for="Outputs[index].SubtractFeesFromOutput" class="text-danger"></span>
+                                        <div class="form-check">
+                                            <input type="checkbox" asp-for="Outputs[index].SubtractFeesFromOutput" class="form-check-input subtract-fees" />
+                                            <label asp-for="Outputs[index].SubtractFeesFromOutput" class="form-check-label"></label>
+                                            <span asp-validation-for="Outputs[index].SubtractFeesFromOutput" class="text-danger"></span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-sm-12 col-md-12 col-lg-2 pull-right">
@@ -108,36 +110,34 @@
             @if (Model.Outputs.Count == 1)
             {
                 <div class="form-group">
-                    <label asp-for="Outputs[0].SubtractFeesFromOutput" class="control-label"></label>
-                    <input type="checkbox" asp-for="Outputs[0].SubtractFeesFromOutput" class="form-check subtract-fees" />
-                    <span asp-validation-for="Outputs[0].SubtractFeesFromOutput" class="text-danger"></span>
+                    <div class="form-check">
+                        <input type="checkbox" asp-for="Outputs[0].SubtractFeesFromOutput" class="form-check-input subtract-fees" />
+                        <label asp-for="Outputs[0].SubtractFeesFromOutput" class="form-check-label"></label>
+                        <span asp-validation-for="Outputs[0].SubtractFeesFromOutput" class="text-danger"></span>
+                    </div>
                 </div>
             }
             <div class="card">
-                <div class="card-header" id="accordian-dev-info-notification-header">
-                    <h2 class="mb-0">
-                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#accordian-advanced" aria-expanded="false" aria-controls="accordian-advanced">
-                            Advanced settings
-                        </button>
-                    </h2>
-                </div>
+                <button class="btn btn-light collapsed" type="button" data-toggle="collapse" data-target="#accordian-advanced" aria-expanded="false" aria-controls="accordian-advanced">
+                    Advanced settings
+                </button>
                 <div id="accordian-advanced" class="collapse" aria-labelledby="accordian-advanced-header" data-parent="#accordian-advanced">
                     <div class="card-body">
-                        <div class="form-group">
-                            <label asp-for="NoChange"></label>
+                        <div class="form-check">
+                            <input asp-for="NoChange" class="form-check-input" />
+                            <label asp-for="NoChange" class="form-check-label"></label>
                             <a href="https://docs.btcpayserver.org/features/wallet#make-sure-no-change-utxo-is-created-expert-mode" target="_blank">
                                 <span class="fa fa-question-circle-o" title="More information..."></span>
                             </a>
-                            <input asp-for="NoChange" class="form-check" />
                         </div>
                         @if (Model.SupportRBF)
                         {
-                            <div class="form-group">
-                                <label asp-for="DisableRBF"></label>
+                            <div class="form-check">
+                                <input asp-for="DisableRBF" class="form-check-input" />
+                                <label asp-for="DisableRBF" class="form-check-label"></label>
                                 <a href="https://bitcoin.org/en/glossary/rbf" target="_blank">
                                     <span class="fa fa-question-circle-o" title="More information..."></span>
                                 </a>
-                                <input asp-for="DisableRBF" class="form-check" />
                             </div>
                         }
                     </div>
@@ -152,6 +152,9 @@
                         <button name="command" type="submit" class="dropdown-item" value="ledger">... your Ledger Wallet device</button>
                         <button name="command" type="submit" class="dropdown-item" value="seed">... an HD private key or mnemonic seed</button>
                         <button name="command" type="submit" class="dropdown-item" value="analyze-psbt">... a wallet supporting PSBT</button>
+                        @if (Model.CryptoCode == "BTC") {
+                            <button name="command" type="submit" class="dropdown-item" value="vault">... the vault (preview)</button>
+                        }
                     </div>
                 </div>
                 <button type="submit" name="command" value="add-output" class="ml-1 btn btn-secondary">Add another destination </button>

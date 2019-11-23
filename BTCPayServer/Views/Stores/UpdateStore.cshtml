@@ -4,20 +4,7 @@
     ViewData.SetActivePageAndTitle(StoreNavPages.Index, "Profile");
 }
 
-<style type="text/css">
-    .smMaxWidth {
-        max-width: 150px;
-    }
-
-    @@media (min-width: 768px) {
-        .smMaxWidth {
-            max-width: 300px;
-        }
-    }
-</style>
-
-
-<partial name="_StatusMessage" for="@TempData["TempDataProperty-StatusMessage"]" />
+<partial name="_StatusMessage" />
 
 <div class="row">
     <div class="col-md-6">
@@ -51,31 +38,41 @@
                 </select>
             </div>
             <div class="form-group">
-                <label asp-for="AnyoneCanCreateInvoice"></label>
-                <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#allow-anyone-to-create-invoice" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
-                <input asp-for="AnyoneCanCreateInvoice" type="checkbox" class="form-check" />
+                <div class="form-check">
+                    <input asp-for="AnyoneCanCreateInvoice" type="checkbox" class="form-check-input" />
+                    <label asp-for="AnyoneCanCreateInvoice" class="form-check-label"></label>
+                    <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#allow-anyone-to-create-invoice" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                </div>
             </div>
             <div class="form-group">
-                <label asp-for="InvoiceExpiration"></label>
-                <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#invoice-expires-if-the-full-amount-has-not-been-paid-after-minutes" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                <div class="mb-2">
+                    <label asp-for="InvoiceExpiration" class="d-inline"></label>
+                    <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#invoice-expires-if-the-full-amount-has-not-been-paid-after-minutes" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                </div>
                 <input asp-for="InvoiceExpiration" class="form-control" />
                 <span asp-validation-for="InvoiceExpiration" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="MonitoringExpiration"></label>
-                <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#payment-invalid-if-transactions-fails-to-confirm-minutes-after-invoice-expiration" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                <div class="mb-2">
+                    <label asp-for="MonitoringExpiration" class="d-inline"></label>
+                    <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#payment-invalid-if-transactions-fails-to-confirm-minutes-after-invoice-expiration" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                </div>
                 <input asp-for="MonitoringExpiration" class="form-control" />
                 <span asp-validation-for="MonitoringExpiration" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="PaymentTolerance"></label>
-                <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#consider-the-invoice-paid-even-if-the-paid-amount-is-less-than-expected" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                <div class="mb-2">
+                    <label asp-for="PaymentTolerance" class="d-inline"></label>
+                    <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#consider-the-invoice-paid-even-if-the-paid-amount-is-less-than-expected" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                </div>
                 <input asp-for="PaymentTolerance" class="form-control" />
                 <span asp-validation-for="PaymentTolerance" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="SpeedPolicy"></label>
-                <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#consider-the-invoice-confirmed-when-the-payment-transaction" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                <div class="mb-2">
+                    <label asp-for="SpeedPolicy" class="d-inline"></label>
+                    <a href="https://docs.btcpayserver.org/faq-and-common-issues/faq-stores#consider-the-invoice-confirmed-when-the-payment-transaction" target="_blank"><span class="fa fa-question-circle-o" title="More information..."></span></a>
+                </div>
                 <select asp-for="SpeedPolicy" class="form-control">
                     <option value="0">Is unconfirmed</option>
                     <option value="1">Has at least 1 confirmation</option>
@@ -120,7 +117,7 @@
                                     {
                                         <a asp-action="WalletTransactions" asp-controller="Wallets" asp-route-walletId="@scheme.WalletId">Wallet</a><span> - </span>
                                     }
-                                    <a asp-action="AddDerivationScheme" asp-route-cryptoCode="@scheme.Crypto" id="ModifyBTC">Modify</a>
+                                    <a asp-action="AddDerivationScheme" asp-route-cryptoCode="@scheme.Crypto" asp-route-storeId="@this.Context.GetRouteValue("storeId")" id="@($"Modify{scheme.Crypto}")">Modify</a>
                                 </td>
                             </tr>
                         }
@@ -162,7 +159,7 @@
                                             <span class="fa fa-times"></span>
                                         }
                                     </td>
-                                    <td style="text-align:right"><a asp-action="AddLightningNode" asp-route-cryptoCode="@scheme.CryptoCode">Modify</a></td>
+                                    <td style="text-align:right"><a asp-action="AddLightningNode" asp-route-cryptoCode="@scheme.CryptoCode" asp-route-storeId="@this.Context.GetRouteValue("storeId")" id="@($"Modify-Lightning{scheme.CryptoCode}")">Modify</a></td>
                                 </tr>
                             }
                         </tbody>

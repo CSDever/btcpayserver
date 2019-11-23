@@ -84,15 +84,16 @@ namespace BTCPayServer.Services.Rates
             { "ZEUR", "EUR" },
             { "ZJPY", "JPY" },
             { "ZCAD", "CAD" },
+            { "ZGBP", "GBP" }
         };
 
         public async Task<ExchangeRates> GetRatesAsync(CancellationToken cancellationToken)
         {
             var result = new ExchangeRates();
-            var symbols = await GetSymbolsAsync();
-            var normalizedPairsList = symbols.Where(s => !notFoundSymbols.ContainsKey(s)).Select(s => _Helper.NormalizeSymbol(s)).ToList();
+            var symbols = await GetSymbolsAsync(cancellationToken);
+            var normalizedPairsList = symbols.Where(s => !notFoundSymbols.ContainsKey(s)).Select(s => _Helper.NormalizeMarketSymbol(s)).ToList();
             var csvPairsList = string.Join(",", normalizedPairsList);
-            JToken apiTickers = await MakeJsonRequestAsync<JToken>("/0/public/Ticker", null, new Dictionary<string, object> { { "pair", csvPairsList } });
+            JToken apiTickers = await MakeJsonRequestAsync<JToken>("/0/public/Ticker", null, new Dictionary<string, object> { { "pair", csvPairsList } }, cancellationToken: cancellationToken);
             var tickers = new List<KeyValuePair<string, ExchangeTicker>>();
             foreach (string symbol in symbols)
             {
@@ -113,7 +114,7 @@ namespace BTCPayServer.Services.Rates
                         }
                         else
                         {
-                            global = _Helper.ExchangeSymbolToGlobalSymbol(symbol);
+                            global = await _Helper.ExchangeMarketSymbolToGlobalMarketSymbolAsync(symbol);
                         }
                         if (CurrencyPair.TryParse(global, out var pair))
                             result.Add(new ExchangeRate("kraken", pair.Inverse(), new BidAsk(ticker.Bid, ticker.Ask)));
@@ -141,16 +142,16 @@ namespace BTCPayServer.Services.Rates
                 Last = last,
                 Volume = new ExchangeVolume
                 {
-                    BaseVolume = ticker["v"][1].ConvertInvariant<decimal>(),
-                    BaseSymbol = symbol,
-                    ConvertedVolume = ticker["v"][1].ConvertInvariant<decimal>() * last,
-                    ConvertedSymbol = symbol,
+                    BaseCurrencyVolume = ticker["v"][1].ConvertInvariant<decimal>(),
+                    BaseCurrency = symbol,
+                    QuoteCurrencyVolume = ticker["v"][1].ConvertInvariant<decimal>() * last,
+                    QuoteCurrency = symbol,
                     Timestamp = DateTime.UtcNow
                 }
             };
         }
 
-        private async Task<string[]> GetSymbolsAsync()
+        private async Task<string[]> GetSymbolsAsync(CancellationToken cancellationToken)
         {
             if (_LastSymbolUpdate != null && DateTimeOffset.UtcNow - _LastSymbolUpdate.Value < TimeSpan.FromDays(0.5))
             {
@@ -158,7 +159,7 @@ namespace BTCPayServer.Services.Rates
             }
             else
             {
-                JToken json = await MakeJsonRequestAsync<JToken>("/0/public/AssetPairs");
+                JToken json = await MakeJsonRequestAsync<JToken>("/0/public/AssetPairs", cancellationToken: cancellationToken);
                 var symbols = (from prop in json.Children<JProperty>() where !prop.Name.Contains(".d", StringComparison.OrdinalIgnoreCase) select prop.Name).ToArray();
                 _Symbols = symbols;
                 _LastSymbolUpdate = DateTimeOffset.UtcNow;

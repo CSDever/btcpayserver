@@ -4,8 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using AspNet.Security.OpenIdConnect.Primitives;
+using System.Security.Claims;
 using BTCPayServer.Tests.Logging;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,24 +17,26 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenIddict.Abstractions;
 using OpenQA.Selenium;
+using Microsoft.AspNetCore.Identity;
 
 namespace BTCPayServer.Tests
 {
     public class AuthenticationTests
     {
+        public const int TestTimeout = TestUtils.TestTimeout;
         public AuthenticationTests(ITestOutputHelper helper)
         {
             Logs.Tester = new XUnitLog(helper) {Name = "Tests"};
             Logs.LogProvider = new XUnitLogProvider(helper);
         }
 
-        [Fact]
+        [Fact(Timeout = TestTimeout)]
         [Trait("Integration", "Integration")]
         public async Task GetRedirectedToLoginPathOnChallenge()
         {
             using (var tester = ServerTester.Create())
             {
-                tester.Start();
+                await tester.StartAsync();
                 var client = tester.PayTester.HttpClient;
                 //Wallets endpoint is protected
                 var response = await client.GetAsync("wallets");
@@ -49,13 +52,13 @@ namespace BTCPayServer.Tests
             }
         }
 
-        [Fact]
+        [Fact(Timeout = TestTimeout)]
         [Trait("Integration", "Integration")]
         public async Task CanGetOpenIdConfiguration()
         {
             using (var tester = ServerTester.Create())
             {
-                tester.Start();
+                await tester.StartAsync();
                 using (var response =
                     await tester.PayTester.HttpClient.GetAsync("/.well-known/openid-configuration"))
                 {
@@ -70,16 +73,17 @@ namespace BTCPayServer.Tests
             }
         }
 
-        [Fact]
+        [Fact(Timeout = TestTimeout)]
         [Trait("Integration", "Integration")]
         public async Task CanUseNonInteractiveFlows()
         {
             using (var tester = ServerTester.Create())
             {
-                tester.Start();
+                await tester.StartAsync();
 
                 var user = tester.NewAccount();
                 user.GrantAccess();
+                await user.MakeAdmin();
                 var token = await RegisterPasswordClientAndGetAccessToken(user, null, tester);
                 await TestApiAgainstAccessToken(token, tester, user);
                 token = await RegisterPasswordClientAndGetAccessToken(user, "secret", tester);
@@ -89,17 +93,18 @@ namespace BTCPayServer.Tests
             }
         }
 
+        [Fact(Timeout = TestTimeout)]
         [Trait("Selenium", "Selenium")]
-        [Fact]
         public async Task CanUseImplicitFlow()
         {
             using (var s = SeleniumTester.Create())
             {
-                s.Start();
+                await s.StartAsync();
                 var tester = s.Server;
 
                 var user = tester.NewAccount();
                 user.GrantAccess();
+                await user.MakeAdmin();
                 var id = Guid.NewGuid().ToString();
                 var redirecturi = new Uri("http://127.0.0.1/oidc-callback");
                 var openIdClient = await user.RegisterOpenIdClient(
@@ -108,10 +113,11 @@ namespace BTCPayServer.Tests
                         ClientId = id,
                         DisplayName = id,
                         Permissions = {OpenIddictConstants.Permissions.GrantTypes.Implicit},
-                        RedirectUris = {redirecturi}
+                        RedirectUris = {redirecturi},
+                        
                     });
                 var implicitAuthorizeUrl = new Uri(tester.PayTester.ServerUri,
-                    $"connect/authorize?response_type=token&client_id={id}&redirect_uri={redirecturi.AbsoluteUri}&scope=openid&nonce={Guid.NewGuid().ToString()}");
+                    $"connect/authorize?response_type=token&client_id={id}&redirect_uri={redirecturi.AbsoluteUri}&scope=openid server_management store_management&nonce={Guid.NewGuid().ToString()}");
                 s.Driver.Navigate().GoToUrl(implicitAuthorizeUrl);
                 s.Login(user.RegisterDetails.Email, user.RegisterDetails.Password);
                 s.Driver.FindElement(By.Id("consent-yes")).Click();
@@ -126,15 +132,52 @@ namespace BTCPayServer.Tests
                 results = url.Split("#").Last().Split("&").ToDictionary(s1 => s1.Split("=")[0], s1 => s1.Split("=")[1]);
                 await TestApiAgainstAccessToken(results["access_token"], tester, user);
 
+                var stores = await TestApiAgainstAccessToken<StoreData[]>(results["access_token"],
+                    $"api/test/me/stores",
+                    tester.PayTester.HttpClient);
+                Assert.NotEmpty(stores);
+
+                Assert.True(await TestApiAgainstAccessToken<bool>(results["access_token"],
+                $"api/test/me/stores/{stores[0].Id}/can-edit",
+                tester.PayTester.HttpClient));
+
+                //we dont ask for consent after acquiring it the first time for the same scopes.
                 LogoutFlow(tester, id, s);
-                
                 s.Driver.Navigate().GoToUrl(implicitAuthorizeUrl);
                 s.Login(user.RegisterDetails.Email, user.RegisterDetails.Password);
-                
-                Assert.Throws<NoSuchElementException>(() => s.Driver.FindElement(By.Id("consent-yes")));
-                results = url.Split("#").Last().Split("&")
+                s.Driver.AssertElementNotFound(By.Id("consent-yes"));
+
+                // Let's asks without scopes
+                LogoutFlow(tester, id, s);
+                id = Guid.NewGuid().ToString();
+                openIdClient = await user.RegisterOpenIdClient(
+                    new OpenIddictApplicationDescriptor()
+                    {
+                        ClientId = id,
+                        DisplayName = id,
+                        Permissions = { OpenIddictConstants.Permissions.GrantTypes.Implicit },
+                        RedirectUris = { redirecturi },
+                    });
+                implicitAuthorizeUrl = new Uri(tester.PayTester.ServerUri,
+                    $"connect/authorize?response_type=token&client_id={id}&redirect_uri={redirecturi.AbsoluteUri}&scope=openid&nonce={Guid.NewGuid().ToString()}");
+                s.Driver.Navigate().GoToUrl(implicitAuthorizeUrl);
+                s.Login(user.RegisterDetails.Email, user.RegisterDetails.Password);
+                s.Driver.FindElement(By.Id("consent-yes")).Click();
+                results = s.Driver.Url.Split("#").Last().Split("&")
                     .ToDictionary(s1 => s1.Split("=")[0], s1 => s1.Split("=")[1]);
-                await TestApiAgainstAccessToken(results["access_token"], tester, user);
+
+                await Assert.ThrowsAnyAsync<HttpRequestException>(async () =>
+                {
+                    await TestApiAgainstAccessToken<StoreData[]>(results["access_token"],
+                    $"api/test/me/stores",
+                    tester.PayTester.HttpClient);
+                });
+                await Assert.ThrowsAnyAsync<HttpRequestException>(async () =>
+                {
+                    await TestApiAgainstAccessToken<bool>(results["access_token"],
+                    $"api/test/me/stores/{stores[0].Id}/can-edit",
+                    tester.PayTester.HttpClient);
+                });
             }
         }
 
@@ -148,17 +191,18 @@ namespace BTCPayServer.Tests
             
         }
 
+        [Fact(Timeout = TestTimeout)]
         [Trait("Selenium", "Selenium")]
-        [Fact]
         public async Task CanUseCodeFlow()
         {
             using (var s = SeleniumTester.Create())
             {
-                s.Start();
+                await s.StartAsync();
                 var tester = s.Server;
 
                 var user = tester.NewAccount();
                 user.GrantAccess();
+                await user.MakeAdmin();
                 var id = Guid.NewGuid().ToString();
                 var redirecturi = new Uri("http://127.0.0.1/oidc-callback");
                 var secret = "secret";
@@ -175,7 +219,7 @@ namespace BTCPayServer.Tests
                         RedirectUris = {redirecturi}
                     }, secret);
                 var authorizeUrl = new Uri(tester.PayTester.ServerUri,
-                    $"connect/authorize?response_type=code&client_id={id}&redirect_uri={redirecturi.AbsoluteUri}&scope=openid offline_access&state={Guid.NewGuid().ToString()}");
+                    $"connect/authorize?response_type=code&client_id={id}&redirect_uri={redirecturi.AbsoluteUri}&scope=openid offline_access server_management store_management&state={Guid.NewGuid().ToString()}");
                 s.Driver.Navigate().GoToUrl(authorizeUrl);
                 s.Login(user.RegisterDetails.Email, user.RegisterDetails.Password);
                 s.Driver.FindElement(By.Id("consent-yes")).Click();
@@ -205,7 +249,7 @@ namespace BTCPayServer.Tests
                 Assert.True(response.IsSuccessStatusCode);
 
                 string content = await response.Content.ReadAsStringAsync();
-                var result = JObject.Parse(content).ToObject<OpenIdConnectResponse>();
+                var result = JObject.Parse(content).ToObject<OpenIddictResponse>();
 
                 await TestApiAgainstAccessToken(result.AccessToken, tester, user);
 
@@ -245,7 +289,7 @@ namespace BTCPayServer.Tests
             Assert.True(response.IsSuccessStatusCode);
 
             string content = await response.Content.ReadAsStringAsync();
-            var result = JObject.Parse(content).ToObject<OpenIdConnectResponse>();
+            var result = JObject.Parse(content).ToObject<OpenIddictResponse>();
             Assert.NotEmpty(result.AccessToken);
             Assert.Null(result.Error);
             return result.AccessToken;
@@ -275,7 +319,8 @@ namespace BTCPayServer.Tests
                     new KeyValuePair<string, string>("grant_type",
                         OpenIddictConstants.GrantTypes.ClientCredentials),
                     new KeyValuePair<string, string>("client_id", openIdClient.ClientId),
-                    new KeyValuePair<string, string>("client_secret", secret)
+                    new KeyValuePair<string, string>("client_secret", secret),
+                    new KeyValuePair<string, string>("scope", "server_management store_management")
                 })
             };
 
@@ -285,7 +330,7 @@ namespace BTCPayServer.Tests
             Assert.True(response.IsSuccessStatusCode);
 
             string content = await response.Content.ReadAsStringAsync();
-            var result = JObject.Parse(content).ToObject<OpenIdConnectResponse>();
+            var result = JObject.Parse(content).ToObject<OpenIddictResponse>();
             Assert.NotEmpty(result.AccessToken);
             Assert.Null(result.Error);
             return result.AccessToken;
@@ -315,7 +360,8 @@ namespace BTCPayServer.Tests
                     new KeyValuePair<string, string>("username", user.RegisterDetails.Email),
                     new KeyValuePair<string, string>("password", user.RegisterDetails.Password),
                     new KeyValuePair<string, string>("client_id", openIdClient.ClientId),
-                    new KeyValuePair<string, string>("client_secret", secret)
+                    new KeyValuePair<string, string>("client_secret", secret),
+                    new KeyValuePair<string, string>("scope", "server_management store_management")
                 })
             };
 
@@ -325,7 +371,7 @@ namespace BTCPayServer.Tests
             Assert.True(response.IsSuccessStatusCode);
 
             string content = await response.Content.ReadAsStringAsync();
-            var result = JObject.Parse(content).ToObject<OpenIdConnectResponse>();
+            var result = JObject.Parse(content).ToObject<OpenIddictResponse>();
             Assert.NotEmpty(result.AccessToken);
             Assert.Null(result.Error);
             return result.AccessToken;
@@ -353,8 +399,7 @@ namespace BTCPayServer.Tests
                 $"api/test/me/stores/{testAccount.StoreId}/can-edit",
                 tester.PayTester.HttpClient));
 
-
-            Assert.Equal(testAccount.RegisterDetails.IsAdmin, await TestApiAgainstAccessToken<bool>(accessToken,
+            Assert.True(await TestApiAgainstAccessToken<bool>(accessToken,
                 $"api/test/me/is-admin",
                 tester.PayTester.HttpClient));
 

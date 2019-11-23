@@ -66,16 +66,21 @@
     right: 0;
     height: 100vh;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     z-index: 999;
     background: #e1e6ea;
     transition: all 0.3s;
     -webkit-overflow-scrolling: touch;
 }
+
 #sidebar .js-cart {
     display: none;
 }
 
+#sidebar #js-cart-list,
+#sidebar #js-cart-extra {
+    border-radius: 0;
+}
 
 #sidebar.active {
     margin-right: -400px;

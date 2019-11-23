@@ -1,6 +1,16 @@
 ﻿@model RegisterViewModel
 @{
     ViewData["Title"] = "Register";
+    var useBasicLayout = ViewData["UseBasicLayout"] is true;
+    Layout = useBasicLayout ? "../Shared/_Layout.cshtml" : "_WelcomeLayout.cshtml";
+}
+@if (TempData.HasStatusMessage())
+{
+    <div class="row">
+        <div class="col-lg-12 text-center">
+            <partial name="_StatusMessage"/>
+        </div>
+    </div>
 }
 
 <section>
@@ -77,6 +87,7 @@
                 </div>
             </div>
         </div>
+            <div class="modal-footer"><span>Already have an account? <a id="Login" asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]">Login</a></span></div>
     </div>
 </section>
 

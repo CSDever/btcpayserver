@@ -3,7 +3,7 @@
 <div class="top-header">
     <div class="header">
         <div class="header__icon">
-            @if (Model.CustomLogoLink != null)
+            @if (!string.IsNullOrEmpty(Model.CustomLogoLink))
             {
                 <img class="header__icon__img" src="@Model.CustomLogoLink" height="40">
             }
@@ -38,7 +38,7 @@
 <div class="order-details">
     <div class="currency-selection">
         <div class="single-item-order__left">
-            <div style="font-weight: 600;">
+            <div style="font-weight: 600;" id="pay-with-text">
                 {{$t("Pay with")}}
             </div>
         </div>
@@ -100,7 +100,7 @@
                 <span>{{ srvModel.btcDue }} {{ srvModel.cryptoCode }}</span>
             </div>
             <div class="single-item-order__right__ex-rate" v-if="srvModel.orderAmountFiat && srvModel.cryptoCode">
-                1 {{ srvModel.cryptoCodeSrv }} = {{ srvModel.rate }}
+                {{srvModel.rateBaseAmount}} {{ srvModel.cryptoCodeSrv }} = {{ srvModel.rate }}
             </div>
         </div>
         <span class="fa fa-angle-double-down"></span>
@@ -153,21 +153,21 @@
     </component>
 </div>
 
-<div class="payment-box">
+<div class="payment-box" v-bind:class="{ 'payment-box--with-recommended-fee': showRecommendedFee && !showEmailForm }">
     <div class="bp-view payment manual-flow enter-contact-email" id="emailAddressView" v-bind:class="{ 'active': showEmailForm}">
         <form class="manual__step-one refund-address-form contact-email-form" id="emailAddressForm" name="emailAddressForm" novalidate="" v-on:submit.prevent="onEmailSubmit">
             <div class="manual__step-one__header">
                 <span>{{$t("Contact and Refund Email")}}</span>
             </div>
             <div class="manual__step-one__instructions">
-                <span class="initial-label">
+                <span class="initial-label" v-show="!emailAddressInputInvalid">
                     <span>{{$t("Contact_Body")}}</span>
                 </span>
-                <span class="submission-error-label">{{$t("Please enter a valid email address")}}</span>
+                <span class="submission-error-label" v-show="emailAddressInputInvalid">{{$t("Please enter a valid email address")}}</span>
             </div>
             <div class="input-wrapper">
                 <input class="bp-input email-input "
-                       v-bind:class="{ 'ng-pristine ng-submitted ng-touched': !emailAddressInputDirty,  'ng-invalid': emailAddressInputInvalid }" id="emailAddressFormInput"
+                       v-bind:class="{ 'ng-pristine ng-submitted ng-touched': !emailAddressInputDirty,  'ng-invalid form-input-invalid': emailAddressInputInvalid }" id="emailAddressFormInput"
                        v-bind:placeholder="$t('Your email')" type="email" v-model="emailAddressInput"
                        v-on:change="onEmailChange">
                 <bp-loading-button>
@@ -203,10 +203,10 @@
                     </div>
                 </div>
                 <div class="success-message">{{$t("This invoice has been paid")}}</div>
-                <a class="action-button" :href="srvModel.merchantRefLink" v-show="!srvModel.isModal">
+                <a class="action-button" :href="srvModel.merchantRefLink" v-show="!isModal">
                     <span v-html="$t('Return to StoreName', srvModel)"></span>
                 </a>
-                <button class="action-button close-action" v-show="srvModel.isModal" v-on:click="close">
+                <button class="action-button close-action" v-show="isModal" v-on:click="close">
                     <span v-html="$t('Close')">{{$t("Return to StoreName", srvModel)}}</span>
                 </button>
             </div>
@@ -236,10 +236,10 @@
                     {{srvModel.orderId}}
                 </div>
             </div>
-            <a class="action-button" :href="srvModel.merchantRefLink" v-show="!srvModel.isModal">
+            <a class="action-button" :href="srvModel.merchantRefLink" v-show="!isModal">
                 <span>{{$t("Return to StoreName", srvModel)}}</span>
             </a>
-            <button class="action-button close-action" v-show="srvModel.isModal" v-on:click="close">
+            <button class="action-button close-action" v-show="isModal" v-on:click="close">
                 <span>{{$t("Return to StoreName", srvModel)}}</span>
             </button>
         </div>

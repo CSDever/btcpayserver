@@ -17,6 +17,8 @@ namespace BTCPayServer.HostedServices
     public class CheckConfigurationHostedService : IHostedService
     {
         private readonly BTCPayServerOptions _options;
+        Task _testingConnection;
+        CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         public CheckConfigurationHostedService(BTCPayServerOptions options)
         {
@@ -27,21 +29,23 @@ namespace BTCPayServer.HostedServices
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _ = TestConnection();
+            _testingConnection = TestConnection();
             return Task.CompletedTask;
         }
 
         async Task TestConnection()
         {
+            TimeSpan nextWait = TimeSpan.FromSeconds(10);
+            retry:
             var canUseSSH = false;
             if (_options.SSHSettings != null)
             {
                 Logs.Configuration.LogInformation($"SSH settings detected, testing connection to {_options.SSHSettings.Username}@{_options.SSHSettings.Server} on port {_options.SSHSettings.Port} ...");
                 try
                 {
-                    using (var connection = await _options.SSHSettings.ConnectAsync())
+                    using (var connection = await _options.SSHSettings.ConnectAsync(_cancellationTokenSource.Token))
                     {
-                        await connection.DisconnectAsync();
+                        await connection.DisconnectAsync(_cancellationTokenSource.Token);
                         Logs.Configuration.LogInformation($"SSH connection succeeded");
                         canUseSSH = true;
                     }
@@ -59,13 +63,29 @@ namespace BTCPayServer.HostedServices
                     }
                     Logs.Configuration.LogWarning($"SSH connection issue of type {ex.GetType().Name}: {message}");
                 }
+                if (!canUseSSH)
+                {
+                    Logs.Configuration.LogWarning($"Retrying SSH connection in {(int)nextWait.TotalSeconds} seconds");
+                    await Task.Delay(nextWait, _cancellationTokenSource.Token);
+                    nextWait = TimeSpan.FromSeconds(nextWait.TotalSeconds * 2);
+                    if (nextWait > TimeSpan.FromMinutes(10.0))
+                        nextWait = TimeSpan.FromMinutes(10.0);
+                    goto retry;
+                }
             }
             CanUseSSH = canUseSSH;
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            _cancellationTokenSource.Cancel();
+            try
+            {
+                // Renci SSH sometimes is deadlocking, so we just wait at most 5 seconds
+                await Task.WhenAny(_testingConnection, Task.Delay(5000, _cancellationTokenSource.Token));
+            }
+            catch { }
+            Logs.PayServer.LogInformation($"{this.GetType().Name} successfully exited...");
         }
     }
 }

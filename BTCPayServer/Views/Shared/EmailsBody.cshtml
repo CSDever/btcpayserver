@@ -18,6 +18,7 @@
             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                 <a class="dropdown-item" href="" data-Server="smtp.gmail.com" data-Port="587" data-EnableSSL="true">Gmail.com</a>
                 <a class="dropdown-item" href="" data-Server="mail.yahoo.com" data-Port="587" data-EnableSSL="true">Yahoo.com</a>
+                <a class="dropdown-item" href="" data-Server="smtp.office365.com" data-Port="587" data-EnableSSL="true">Office365</a>
             </div>
         </div>
         <p></p>
@@ -82,7 +83,6 @@
                 <input asp-for="Settings.From" class="form-control" />
                 <span asp-validation-for="Settings.From" class="text-danger"></span>
             </div>
-
             <button type="submit" class="btn btn-primary" name="command" value="Save">Save</button>
             <button type="submit" class="btn btn-primary" name="command" value="Test">Send Test Email</button>
         </form>

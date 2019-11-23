@@ -118,6 +118,7 @@ namespace BTCPayServer.Controllers
                 Description = settings.Description,
                 NotificationEmail = settings.NotificationEmail,
                 NotificationUrl = settings.NotificationUrl,
+                SearchTerm = $"storeid:{app.StoreDataId}",
                 RedirectAutomatically = settings.RedirectAutomatically.HasValue? settings.RedirectAutomatically.Value? "true": "false" : "" 
             };
             if (HttpContext?.Request != null)
@@ -200,7 +201,7 @@ namespace BTCPayServer.Controllers
                 
             });
             await _AppService.UpdateOrCreateApp(app);
-            StatusMessage = "App updated";
+            TempData[WellKnownTempData.SuccessMessage] = "App updated";
             return RedirectToAction(nameof(UpdatePointOfSale), new { appId });
         }
 

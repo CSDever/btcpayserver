@@ -1,5 +1,4 @@
-﻿using BTCPayServer.Authentication;
-using BTCPayServer.Configuration;
+﻿using BTCPayServer.Configuration;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,11 +34,20 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using NBXplorer.DerivationStrategy;
 using System.Net;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Newtonsoft.Json.Linq;
 
 namespace BTCPayServer
 {
     public static class Extensions
     {
+#if !NETCOREAPP21
+        public static IQueryable<TEntity> Where<TEntity>(this Microsoft.EntityFrameworkCore.DbSet<TEntity> obj, System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate) where TEntity : class
+        {
+            return System.Linq.Queryable.Where(obj, predicate);
+        }
+#endif
+
         public static string Truncate(this string value, int maxLength)
         {
             if (string.IsNullOrEmpty(value))
@@ -102,6 +110,13 @@ namespace BTCPayServer
                 }
             }
             return value;
+        }
+
+        public static bool HasStatusMessage(this ITempDataDictionary tempData)
+        {
+            return (tempData.Peek(WellKnownTempData.SuccessMessage) ??
+                   tempData.Peek(WellKnownTempData.ErrorMessage) ??
+                   tempData.Peek("StatusMessageModel")) != null;
         }
         public static PaymentMethodId GetpaymentMethodId(this InvoiceCryptoInfo info)
         {
@@ -198,6 +213,42 @@ namespace BTCPayServer
                 return ip.IsLocal() || ip.IsRFC1918();
             }
             return false;
+        }
+
+        public static void SetStatusMessageModel(this ITempDataDictionary tempData, StatusMessageModel statusMessage)
+        {
+            if (statusMessage == null)
+            {
+                tempData.Remove("StatusMessageModel");
+                return;
+            }
+            tempData["StatusMessageModel"] = JObject.FromObject(statusMessage).ToString(Formatting.None);
+        }
+
+        public static StatusMessageModel GetStatusMessageModel(this ITempDataDictionary tempData)
+        {
+            tempData.TryGetValue(WellKnownTempData.SuccessMessage, out var successMessage);
+            tempData.TryGetValue(WellKnownTempData.ErrorMessage, out var errorMessage);
+            tempData.TryGetValue("StatusMessageModel", out var model);
+            if (successMessage != null || errorMessage != null)
+            {
+                var parsedModel = new StatusMessageModel();
+                parsedModel.Message = (string)successMessage ?? (string)errorMessage;
+                if (successMessage != null)
+                {
+                    parsedModel.Severity = StatusMessageModel.StatusSeverity.Success;
+                }
+                else
+                {
+                    parsedModel.Severity = StatusMessageModel.StatusSeverity.Error;
+                }
+                return parsedModel;
+            }
+            else if (model != null && model is string str)
+            {
+                return JObject.Parse(str).ToObject<StatusMessageModel>();
+            }
+            return null;
         }
 
         public static bool IsOnion(this HttpRequest request)
@@ -319,12 +370,7 @@ namespace BTCPayServer
 
         public static string GetSIN(this ClaimsPrincipal principal)
         {
-            return principal.Claims.Where(c => c.Type == Claims.SIN).Select(c => c.Value).FirstOrDefault();
-        }
-
-        public static string GetStoreId(this ClaimsPrincipal principal)
-        {
-            return principal.Claims.Where(c => c.Type == Claims.OwnStore).Select(c => c.Value).FirstOrDefault();
+            return principal.Claims.Where(c => c.Type == Security.Bitpay.BitpayClaims.SIN).Select(c => c.Value).FirstOrDefault();
         }
 
         public static void SetIsBitpayAPI(this HttpContext ctx, bool value)

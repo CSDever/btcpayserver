@@ -71,6 +71,10 @@ namespace BTCPayServer.Tests
             PayTester.Port = int.Parse(GetEnvironment("TESTS_PORT", Utils.FreeTcpPort().ToString(CultureInfo.InvariantCulture)), CultureInfo.InvariantCulture);
             PayTester.HostName = GetEnvironment("TESTS_HOSTNAME", "127.0.0.1");
             PayTester.InContainer = bool.Parse(GetEnvironment("TESTS_INCONTAINER", "false"));
+
+            PayTester.SSHPassword = GetEnvironment("TESTS_SSHPASSWORD", "opD3i2282D");
+            PayTester.SSHKeyFile = GetEnvironment("TESTS_SSHKEYFILE", "");
+            PayTester.SSHConnection = GetEnvironment("TESTS_SSHCONNECTION", "root@127.0.0.1:21622");
         }
 
         public bool Dockerized
@@ -78,9 +82,9 @@ namespace BTCPayServer.Tests
             get; set;
         }
 
-        public void Start()
+        public Task StartAsync()
         {
-            PayTester.Start();
+            return PayTester.StartAsync();
         }
 
         /// <summary>
@@ -162,12 +166,14 @@ namespace BTCPayServer.Tests
 
         public void Dispose()
         {
+            Logs.Tester.LogInformation("Disposing the BTCPayTester...");
             foreach (var store in Stores)
             {
                 Xunit.Assert.True(PayTester.StoreRepository.DeleteStore(store).GetAwaiter().GetResult());
             }
             if (PayTester != null)
                 PayTester.Dispose();
+            Logs.Tester.LogInformation("BTCPayTester disposed");
         }
     }
 }

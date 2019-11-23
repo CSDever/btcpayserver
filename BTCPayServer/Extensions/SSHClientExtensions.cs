@@ -10,28 +10,28 @@ namespace BTCPayServer
 {
     public static class SSHClientExtensions
     {
-        public static Task<SshClient> ConnectAsync(this SSHSettings sshSettings)
+        public static async Task<SshClient> ConnectAsync(this SSHSettings sshSettings, CancellationToken cancellationToken = default)
         {
             if (sshSettings == null)
                 throw new ArgumentNullException(nameof(sshSettings));
-
             TaskCompletionSource<SshClient> tcs = new TaskCompletionSource<SshClient>(TaskCreationOptions.RunContinuationsAsynchronously);
             new Thread(() =>
             {
-                var sshClient = new SshClient(sshSettings.CreateConnectionInfo());
-                sshClient.HostKeyReceived += (object sender, Renci.SshNet.Common.HostKeyEventArgs e) =>
-                {
-                    if (sshSettings.TrustedFingerprints.Count == 0)
-                    {
-                        e.CanTrust = true;
-                    }
-                    else
-                    {
-                        e.CanTrust = sshSettings.IsTrustedFingerprint(e.FingerPrint, e.HostKey);
-                    }
-                };
+                SshClient sshClient = null;
                 try
                 {
+                    sshClient = new SshClient(sshSettings.CreateConnectionInfo());
+                    sshClient.HostKeyReceived += (object sender, Renci.SshNet.Common.HostKeyEventArgs e) =>
+                    {
+                        if (sshSettings.TrustedFingerprints.Count == 0)
+                        {
+                            e.CanTrust = true;
+                        }
+                        else
+                        {
+                            e.CanTrust = sshSettings.IsTrustedFingerprint(e.FingerPrint, e.HostKey);
+                        }
+                    };
                     sshClient.Connect();
                     tcs.TrySetResult(sshClient);
                 }
@@ -40,13 +40,22 @@ namespace BTCPayServer
                     tcs.TrySetException(ex);
                     try
                     {
-                        sshClient.Dispose();
+                        sshClient?.Dispose();
                     }
                     catch { }
                 }
             })
             { IsBackground = true }.Start();
-            return tcs.Task;
+
+            using (cancellationToken.Register(() => { tcs.TrySetCanceled(); }))
+            {
+                return await tcs.Task;
+            }
+        }
+
+        public static string EscapeSingleQuotes(this string command)
+        {
+            return command.Replace("'", "'\"'\"'", StringComparison.OrdinalIgnoreCase);
         }
 
         public static Task<SSHCommandResult> RunBash(this SshClient sshClient, string command, TimeSpan? timeout = null)
@@ -55,29 +64,33 @@ namespace BTCPayServer
                 throw new ArgumentNullException(nameof(sshClient));
             if (command == null)
                 throw new ArgumentNullException(nameof(command));
-            command = $"sudo bash -c '{command}'";
+            command = $"bash -c '{command.EscapeSingleQuotes()}'";
             var sshCommand = sshClient.CreateCommand(command);
             if (timeout is TimeSpan v)
                 sshCommand.CommandTimeout = v;
             var tcs = new TaskCompletionSource<SSHCommandResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             new Thread(() =>
             {
-                sshCommand.BeginExecute(ar =>
+                try
                 {
-                    try
+                    sshCommand.BeginExecute(ar =>
                     {
-                        sshCommand.EndExecute(ar);
-                        tcs.TrySetResult(CreateSSHCommandResult(sshCommand));
-                    }
-                    catch (Exception ex)
-                    {
-                        tcs.TrySetException(ex);
-                    }
-                    finally
-                    {
-                        sshCommand.Dispose();
-                    }
-                });
+                        try
+                        {
+                            sshCommand.EndExecute(ar);
+                            tcs.TrySetResult(CreateSSHCommandResult(sshCommand));
+                        }
+                        catch (Exception ex)
+                        {
+                            tcs.TrySetException(ex);
+                        }
+                        finally
+                        {
+                            sshCommand.Dispose();
+                        }
+                    });
+                }
+                catch(Exception ex) { tcs.TrySetException(ex); }
             })
             { IsBackground = true }.Start();
             return tcs.Task;
@@ -93,7 +106,7 @@ namespace BTCPayServer
             };
         }
 
-        public static Task DisconnectAsync(this SshClient sshClient)
+        public static async Task DisconnectAsync(this SshClient sshClient, CancellationToken cancellationToken = default)
         {
             if (sshClient == null)
                 throw new ArgumentNullException(nameof(sshClient));
@@ -112,7 +125,10 @@ namespace BTCPayServer
                 }
             })
             { IsBackground = true }.Start();
-            return tcs.Task;
+            using (cancellationToken.Register(() => tcs.TrySetCanceled()))
+            {
+                await tcs.Task;
+            }
         }
     }
 }
